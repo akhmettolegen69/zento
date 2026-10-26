@@ -1,0 +1,14 @@
+[Unit]
+Description=Zento (gunicorn)
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/srv/zento
+EnvironmentFile=/srv/zento/.env
+ExecStart=/srv/zento/.venv/bin/gunicorn zento.wsgi:application --bind unix:/run/zento.sock --workers 3
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
