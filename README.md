@@ -30,9 +30,9 @@ set -a; . ./.env; set +a
 .venv/bin/python manage.py migrate && .venv/bin/python manage.py collectstatic --noinput
 .venv/bin/python manage.py createsuperuser
 cp deploy/zento.service /etc/systemd/system/ && systemctl enable --now zento
-cp deploy/nginx.conf /etc/nginx/sites-available/zento && ln -s /etc/nginx/sites-available/zento /etc/nginx/sites-enabled/
+cp deploy/nginx.conf /etc/nginx/sites-available/zento && ln -sf /etc/nginx/sites-available/zento /etc/nginx/sites-enabled/ && rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
-certbot --nginx -d example.com -d www.example.com
+certbot --nginx -d zentoit.tech -d www.zentoit.tech
 ```
 
 Updates: `cd /srv/zento && ./deploy/update.sh`. Back up `/srv/zento-data` (database + uploaded images).
