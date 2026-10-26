@@ -1,0 +1,26 @@
+{% load zento %}
+{% if rows %}
+<div class="cart-rows">
+{% for r in rows %}
+  <div class="cart-row">
+    <div class="thumb" style="background-image:url('{{ r.product.image.url }}')"></div>
+    <div class="grow"><b>{{ r.product.name }}</b>
+      <div class="muted small">{{ r.product.price_kzt|kzt }} · {{ r.product.price_cny|cny }}</div></div>
+    <div class="qty">
+      <button hx-post="{% url 'cart_action' 'dec' r.product.pk %}" hx-target="#cart-body">−</button>
+      <span>{{ r.qty }}</span>
+      <button hx-post="{% url 'cart_action' 'inc' r.product.pk %}" hx-target="#cart-body">+</button>
+    </div>
+    <div class="price">{{ r.subtotal_kzt|kzt }}<div class="cny small">{{ r.subtotal_cny|cny }}</div></div>
+    <button class="link" hx-post="{% url 'cart_action' 'remove' r.product.pk %}" hx-target="#cart-body">{% t 'Remove' %}</button>
+  </div>
+{% endfor %}
+</div>
+<div class="cart-total"><span>{% t 'Total' %}</span><b>{{ total_kzt|kzt }} <span class="sep">·</span> <span class="cny">{{ total_cny|cny }}</span></b></div>
+<div class="actions"><a class="btn btn-ghost" href="{% url 'home' %}#catalog">{% t 'Continue shopping' %}</a>
+<a class="btn" href="{% url 'checkout' %}">{% t 'Checkout' %}</a></div>
+{% else %}
+<p class="muted">{% t 'Your cart is empty' %}</p>
+<a class="btn" href="{% url 'home' %}#catalog">{% t 'Continue shopping' %}</a>
+{% endif %}
+<span id="cart-badge" hx-swap-oob="true">{% include 'shop/_cart_badge.html' %}</span>

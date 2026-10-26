@@ -1,0 +1,5 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block content %}
+<section class="page"><h1>{% t 'Your cart' %}</h1><div id="cart-body">{% include 'shop/_cart_body.html' %}</div></section>
+{% endblock %}

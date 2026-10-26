@@ -1,0 +1,11 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block content %}
+<section class="page narrow"><h1>{% t 'Thank you!' %}</h1>
+  <p>{% t 'Order' %} #{{ order.pk }}
+    {% if order.status == 'paid' %}{% t 'is paid. We will contact you shortly.' %}
+    {% elif order.status == 'failed' %}{% t 'payment failed.' %}
+    {% else %}{% t 'is awaiting payment.' %}{% endif %}</p>
+  <a class="btn" href="{% url 'home' %}">{% t 'Back to shop' %}</a>
+</section>
+{% endblock %}

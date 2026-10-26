@@ -1,0 +1,18 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block title %}{{ product.name }} · Zento{% endblock %}
+{% block content %}
+<section class="detail">
+  <div class="detail-img" style="background-image:url('{{ product.image.url }}')"></div>
+  <div>
+    <a class="muted" href="{% url 'home' %}#catalog">← {% t 'Catalog' %}</a>
+    <h1>{{ product.name }}</h1>
+    <div class="price big">{{ product.price_kzt|kzt }} <span class="sep">·</span> <span class="cny">{{ product.price_cny|cny }}</span></div>
+    <p>{{ product.description|linebreaksbr }}</p>
+    <p class="muted">🚚 {% t 'Delivery in' %} {{ product.delivery_range }} {% t 'days' %}</p>
+    {% if product.available %}
+    <button class="btn" hx-post="{% url 'cart_action' 'add' product.pk %}" hx-target="#cart-badge">{% t 'Add to cart' %}</button>
+    {% else %}<p class="sold-text">{% t 'Out of stock' %}</p>{% endif %}
+  </div>
+</section>
+{% endblock %}

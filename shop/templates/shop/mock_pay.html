@@ -1,0 +1,12 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block content %}
+<section class="page narrow"><h1>{% t 'Payment (test mode)' %}</h1>
+  <p>{% t 'Order' %} #{{ order.pk }} — <b>{{ order.total_kzt|kzt }}</b> · {{ order.total_cny|cny }}</p>
+  <form method="post" action="{% url 'payment_callback' %}" class="actions">{% csrf_token %}
+    <input type="hidden" name="order" value="{{ order.pk }}">
+    <button class="btn" name="result" value="paid">{% t 'Simulate successful payment' %}</button>
+    <button class="btn btn-ghost" name="result" value="failed">{% t 'Simulate failed payment' %}</button>
+  </form>
+</section>
+{% endblock %}

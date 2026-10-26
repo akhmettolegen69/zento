@@ -1,0 +1,18 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block content %}
+<section class="page two">
+  <form method="post" class="form">{% csrf_token %}
+    <h1>{% t 'Your details' %}</h1>
+    {% if error %}<p class="error">{% t 'Please fill in all fields.' %}</p>{% endif %}
+    <label>{% t 'Name' %}<input name="name" value="{{ form.name }}" required></label>
+    <label>{% t 'Phone' %}<input name="phone" type="tel" value="{{ form.phone }}" required></label>
+    <label>{% t 'Delivery address' %}<textarea name="address" rows="3" required>{{ form.address }}</textarea></label>
+    <button class="btn">{% t 'Pay now' %} · {{ total_kzt|kzt }}</button>
+  </form>
+  <aside class="summary"><h3>{% t 'Order summary' %}</h3>
+    {% for r in rows %}<div class="sum-row"><span>{{ r.product.name }} × {{ r.qty }}</span><span>{{ r.subtotal_kzt|kzt }}</span></div>{% endfor %}
+    <div class="cart-total"><span>{% t 'Total' %}</span><b>{{ total_kzt|kzt }}<br><span class="cny">{{ total_cny|cny }}</span></b></div>
+  </aside>
+</section>
+{% endblock %}

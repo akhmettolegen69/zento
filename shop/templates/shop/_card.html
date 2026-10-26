@@ -1,0 +1,14 @@
+{% load zento %}
+<article class="card">
+  <a href="{% url 'product' p.pk %}" class="card-img" style="background-image:url('{{ p.image.url }}')">
+    {% if p.badge %}<span class="pill pill-{{ p.badge }}">{% if p.badge == 'new' %}{% t 'New' %}{% elif p.badge == 'popular' %}{% t 'Popular' %}{% else %}{% t 'Sale' %}{% endif %}</span>{% endif %}
+    {% if not p.available %}<span class="sold">{% t 'Out of stock' %}</span>{% endif %}
+  </a>
+  <h3><a href="{% url 'product' p.pk %}">{{ p.name }}</a></h3>
+  <p class="muted clamp">{{ p.description }}</p>
+  <div class="price">{{ p.price_kzt|kzt }} <span class="sep">·</span> <span class="cny">{{ p.price_cny|cny }}</span></div>
+  <div class="muted small">🚚 {% t 'Delivery in' %} {{ p.delivery_range }} {% t 'days' %}</div>
+  {% if p.available %}
+  <button class="btn btn-block" hx-post="{% url 'cart_action' 'add' p.pk %}" hx-target="#cart-badge" hx-swap="innerHTML">{% t 'Add to cart' %}</button>
+  {% endif %}
+</article>

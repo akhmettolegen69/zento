@@ -1,0 +1,41 @@
+{% extends 'shop/base.html' %}
+{% load static zento %}
+{% block content %}
+<section class="hero">
+  <div class="hero-text">
+    <h1>{% t "Find something you'll love" %}</h1>
+    <p>{% t 'Curated products with delivery straight to your door, priced in tenge and yuan.' %}</p>
+    <form class="search" action="{% url 'home' %}#catalog" method="get">
+      <input name="q" placeholder="{% t 'Search for any product...' %}" value="{{ filters.q }}">
+      <button aria-label="search">⌕</button>
+    </form>
+  </div>
+</section>
+
+{% if stories %}
+<section class="stories" aria-label="Stories">
+  {% for s in stories %}
+  <button class="story" data-story="{{ s.pk }}">
+    <span class="ring" style="background-image:url('{{ s.cover.url }}')"></span><em>{{ s.title }}</em>
+  </button>
+  {% endfor %}
+</section>
+<div id="viewer" class="viewer" hidden>
+  <div class="viewer-box">
+    <div class="bars"></div>
+    <button class="v-close" aria-label="{% t 'Close' %}">✕</button>
+    <img class="v-img" alt="">
+    <div class="v-caption"></div>
+    <a class="v-link btn" hidden>{% t 'View product' %}</a>
+    <button class="v-prev" aria-label="prev"></button><button class="v-next" aria-label="next"></button>
+  </div>
+</div>
+{{ story_data|json_script:"story-data" }}
+{% endif %}
+
+<section id="catalog" class="discover">
+  <h2>{% t 'Discover the best products' %}</h2>
+  {% include 'shop/_catalog.html' %}
+</section>
+<script src="{% static 'js/stories.js' %}" defer></script>
+{% endblock %}
