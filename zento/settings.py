@@ -33,7 +33,7 @@ ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').s
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
 
 if not DEBUG:
-    if SECRET_KEY.startswith('django-insecure'):
+    if SECRET_KEY.startswith('django-insecure') or SECRET_KEY == 'change-me':
         raise RuntimeError('Set DJANGO_SECRET_KEY when DJANGO_DEBUG=0')
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SESSION_COOKIE_SECURE = True
@@ -146,3 +146,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LANGUAGES = [('ru', 'Русский'), ('kk', 'Қазақша'), ('en', 'English')]
 PAYMENT_PROVIDER = os.environ.get('ZENTO_PAYMENT_PROVIDER', 'mock')
+
+# Send errors (with tracebacks) to stderr so they show up in `journalctl -u zento`
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {'console': {'class': 'logging.StreamHandler'}},
+    'root': {'handlers': ['console'], 'level': 'WARNING'},
+}
