@@ -17,10 +17,11 @@
 {% endfor %}
 </div>
 <div class="cart-total"><span>{% t 'Total' %}</span><b>{{ total_kzt|kzt }} <span class="sep">·</span> <span class="cny">{{ total_cny|cny }}</span></b></div>
-<div class="actions"><a class="btn btn-ghost" href="{% url 'home' %}#catalog">{% t 'Continue shopping' %}</a>
+<div class="actions"><a class="btn btn-ghost" href="{% url 'home' %}">{% t 'Continue shopping' %}</a>
 <a class="btn" href="{% url 'checkout' %}">{% t 'Checkout' %}</a></div>
 {% else %}
 <p class="muted">{% t 'Your cart is empty' %}</p>
-<a class="btn" href="{% url 'home' %}#catalog">{% t 'Continue shopping' %}</a>
+<a class="btn" href="{% url 'home' %}">{% t 'Continue shopping' %}</a>
 {% endif %}
-<span id="cart-badge" hx-swap-oob="true">{% include 'shop/_cart_badge.html' %}</span>
+<span id="cart-badge" class="cart-badge" hx-swap-oob="true">{% include 'shop/_cart_badge.html' %}</span>
+<span id="cart-badge-top" class="cart-badge" hx-swap-oob="true">{% include 'shop/_cart_badge.html' %}</span>

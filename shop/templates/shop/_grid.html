@@ -1,0 +1,10 @@
+{% load zento %}{% for p in page %}
+<a class="tile" href="{% url 'product' p.pk %}">
+  <img src="{{ p.image.url }}" alt="{{ p.name }}" loading="lazy">
+  {% if show_pins and p.pinned %}<span class="tile-ic" title="{% t 'Pinned' %}">{% include 'shop/_icon.html' with i='pin' size=18 %}</span>
+  {% elif p.photos.all %}<span class="tile-ic">{% include 'shop/_icon.html' with i='carousel' size=18 %}</span>{% endif %}
+  {% if not p.available %}<span class="tile-sold">{% t 'Out of stock' %}</span>{% endif %}
+  <span class="tile-hover"><b>{{ p.price_kzt|kzt }}</b><small>{{ p.name }}</small>{% if not store %}<small>@{{ p.store.slug }}</small>{% endif %}</span>
+</a>
+{% endfor %}
+{% if page.has_next %}<div id="grid-more" class="loader span-all" hx-get="?{% qs page=page.next_page_number %}" hx-trigger="revealed" hx-swap="outerHTML"><span class="spinner"></span></div>{% endif %}

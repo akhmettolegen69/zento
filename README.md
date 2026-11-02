@@ -11,7 +11,8 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
 
 - Storefront: http://127.0.0.1:8000/  ·  Admin: http://127.0.0.1:8000/admin/
-- Products, categories, stories (with slides) and the exchange rate are managed in the admin.
+- Instagram-style layout: the home feed shows each store's **pinned** products (stores with nothing pinned show their newest product); `/s/<username>/` is the store profile with all its products (pinned first, categories as highlights); `/explore/` has search and filters.
+- Stores, products (pin them, add extra carousel photos), categories, stories (with slides, optionally linked to a store) and the exchange rate are managed in the admin.
 - Languages: ru / kk / en (dictionary in `shop/i18n.py`, switcher in the header).
 - Payments: `ZENTO_PAYMENT_PROVIDER=mock` (default, test page). Implement `shop/payments/kaspi.py` and set `kaspi` for a real gateway.
 - Tests: `.venv/bin/python manage.py test`

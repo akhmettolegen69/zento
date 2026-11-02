@@ -1,41 +1,53 @@
 {% extends 'shop/base.html' %}
 {% load static zento %}
 {% block content %}
-<section class="hero">
-  <div class="hero-text">
-    <h1>{% t "Find something you'll love" %}</h1>
-    <p>{% t 'Curated products with delivery straight to your door, priced in tenge and yuan.' %}</p>
-    <form class="search" action="{% url 'home' %}#catalog" method="get">
-      <input name="q" placeholder="{% t 'Search for any product...' %}" value="{{ filters.q }}">
-      <button aria-label="search">⌕</button>
-    </form>
-  </div>
-</section>
+<div class="home">
+  <section class="feed">
+    {% if stories %}
+    <div class="stories" aria-label="Stories">
+      {% for s in stories %}
+      <button class="story" data-story="{{ s.pk }}">
+        <span class="story-ring"><img src="{% if s.store and s.store.logo %}{{ s.store.logo.url }}{% else %}{{ s.cover.url }}{% endif %}" alt=""></span>
+        <em>{% if s.store %}{{ s.store.slug }}{% else %}{{ s.title }}{% endif %}</em>
+      </button>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="posts">
+      {% include 'shop/_posts.html' %}
+      {% if not page.object_list %}
+      <div class="empty">{% include 'shop/_icon.html' with i='store' size=48 stroke='1.2' %}<h2>{% t 'No products yet' %}</h2>
+        <p class="muted">{% t 'Stores will appear here once they pin products.' %}</p></div>
+      {% endif %}
+    </div>
+  </section>
+
+  <aside class="suggest">
+    <div class="suggest-head"><span class="muted">{% t 'Stores' %}</span><a href="{% url 'explore' %}">{% t 'See all' %}</a></div>
+    {% for store in suggested %}
+    <a class="suggest-row" href="{% url 'store' store.slug %}">
+      {% include 'shop/_avatar.html' with size='m' %}
+      <span class="grow"><b class="uname">{{ store.slug }}</b>{% include 'shop/_verified.html' %}<br><small class="muted">{{ store.name }} · {{ store.n }} {% plural store.n 'product' %}</small></span>
+      <span class="link-blue">{% t 'View' %}</span>
+    </a>
+    {% endfor %}
+  </aside>
+</div>
 
 {% if stories %}
-<section class="stories" aria-label="Stories">
-  {% for s in stories %}
-  <button class="story" data-story="{{ s.pk }}">
-    <span class="ring" style="background-image:url('{{ s.cover.url }}')"></span><em>{{ s.title }}</em>
-  </button>
-  {% endfor %}
-</section>
 <div id="viewer" class="viewer" hidden>
   <div class="viewer-box">
     <div class="bars"></div>
+    <div class="v-head"><img class="v-av" alt=""><b class="v-name"></b></div>
     <button class="v-close" aria-label="{% t 'Close' %}">✕</button>
     <img class="v-img" alt="">
     <div class="v-caption"></div>
-    <a class="v-link btn" hidden>{% t 'View product' %}</a>
+    <a class="v-link" hidden>{% t 'View product' %}</a>
     <button class="v-prev" aria-label="prev"></button><button class="v-next" aria-label="next"></button>
   </div>
 </div>
 {{ story_data|json_script:"story-data" }}
 {% endif %}
-
-<section id="catalog" class="discover">
-  <h2>{% t 'Discover the best products' %}</h2>
-  {% include 'shop/_catalog.html' %}
-</section>
-<script src="{% static 'js/stories.js' %}" defer></script>
 {% endblock %}
+{% block scripts %}<script src="{% asset 'js/stories.js' %}" defer></script>{% endblock %}

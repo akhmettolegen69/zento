@@ -1,0 +1,1 @@
+{% if store.logo %}<img class="av av-{{ size|default:'s' }}{% if ring %} av-ring{% endif %}" src="{{ store.logo.url }}" alt="{{ store.slug }}">{% else %}<span class="av av-{{ size|default:'s' }} av-letter{% if ring %} av-ring{% endif %}">{{ store.initial }}</span>{% endif %}

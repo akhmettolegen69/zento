@@ -1,18 +1,52 @@
 {% extends 'shop/base.html' %}
 {% load zento %}
-{% block title %}{{ product.name }} · Zento{% endblock %}
+{% block title %}{{ product.name }} · @{{ product.store.slug }} · Zento{% endblock %}
 {% block content %}
-<section class="detail">
-  <div class="detail-img" style="background-image:url('{{ product.image.url }}')"></div>
-  <div>
-    <a class="muted" href="{% url 'home' %}#catalog">← {% t 'Catalog' %}</a>
-    <h1>{{ product.name }}</h1>
-    <div class="price big">{{ product.price_kzt|kzt }} <span class="sep">·</span> <span class="cny">{{ product.price_cny|cny }}</span></div>
-    <p>{{ product.description|linebreaksbr }}</p>
-    <p class="muted">🚚 {% t 'Delivery in' %} {{ product.delivery_range }} {% t 'days' %}</p>
-    {% if product.available %}
-    <button class="btn" hx-post="{% url 'cart_action' 'add' product.pk %}" hx-target="#cart-badge">{% t 'Add to cart' %}</button>
-    {% else %}<p class="sold-text">{% t 'Out of stock' %}</p>{% endif %}
+{% with p=product store=product.store gallery=product.gallery %}
+<section class="pdp">
+  <div class="pdp-media media" data-carousel>
+    <div class="slides">
+      {% for img in gallery %}<div class="slide"><img src="{{ img.url }}" alt="{{ p.name }}"></div>{% endfor %}
+    </div>
+    {% if gallery|length > 1 %}
+    <button class="nav-btn prev" aria-label="prev" hidden>‹</button><button class="nav-btn next" aria-label="next">›</button>
+    <div class="dots">{% for img in gallery %}<i class="{% if forloop.first %}on{% endif %}"></i>{% endfor %}</div>
+    {% endif %}
+    {% if not p.available %}<span class="sold">{% t 'Out of stock' %}</span>{% endif %}
+  </div>
+  <div class="pdp-side">
+    <header class="post-head">
+      <a href="{% url 'store' store.slug %}" class="post-av">{% include 'shop/_avatar.html' with size='s' ring=True %}</a>
+      <div class="post-who"><a href="{% url 'store' store.slug %}" class="uname">{{ store.slug }}</a>{% include 'shop/_verified.html' %}
+        {% if store.city %}<div class="post-sub">{{ store.city }}</div>{% endif %}</div>
+      <a href="{% url 'store' store.slug %}" class="btn-follow">{% t 'View store' %}</a>
+    </header>
+    <div class="pdp-body">
+      <h1>{{ p.name }}</h1>
+      {% if p.badge %}<span class="tag-inline tag-{{ p.badge }}">{% if p.badge == 'new' %}{% t 'New' %}{% elif p.badge == 'popular' %}{% t 'Popular' %}{% else %}{% t 'Sale' %}{% endif %}</span>{% endif %}
+      <div class="price big">{{ p.price_kzt|kzt }} <span class="cny">{{ p.price_cny|cny }}</span></div>
+      {% if p.description %}<p class="caption"><a href="{% url 'store' store.slug %}" class="uname">{{ store.slug }}</a> {{ p.description|linebreaksbr }}</p>{% endif %}
+      <p class="muted small">{% include 'shop/_icon.html' with i='truck' size=14 %} {% t 'Delivery in' %} {{ p.delivery_range }} {% t 'days' %}{% if p.category %} · {{ p.category.name }}{% endif %}</p>
+    </div>
+    <div class="pdp-actions">
+      {% if p.available %}
+      <button class="btn btn-wide" hx-post="{% url 'cart_action' 'add' p.pk %}" hx-target="#cart-badge" hx-swap="innerHTML">{% include 'shop/_icon.html' with i='bag' size=18 %} {% t 'Add to cart' %}</button>
+      {% else %}<p class="sold-text">{% t 'Out of stock' %}</p>{% endif %}
+      <button class="act" data-share="{% url 'product' p.pk %}" data-title="{{ p.name }}" aria-label="{% t 'Share' %}">{% include 'shop/_icon.html' with i='share' %}</button>
+    </div>
   </div>
 </section>
+
+{% if more %}
+<section class="more-from">
+  <h3 class="muted">{% t 'More from' %} <a href="{% url 'store' store.slug %}" class="uname">{{ store.slug }}</a></h3>
+  <div class="tiles">{% for p in more %}
+    <a class="tile" href="{% url 'product' p.pk %}"><img src="{{ p.image.url }}" alt="{{ p.name }}" loading="lazy">
+      {% if not p.available %}<span class="tile-sold">{% t 'Out of stock' %}</span>{% endif %}
+      <span class="tile-hover"><b>{{ p.price_kzt|kzt }}</b><small>{{ p.name }}</small></span></a>
+  {% endfor %}</div>
+  {% if product_count > 7 %}<a class="btn btn-gray center" href="{% url 'store' store.slug %}">{% t 'View all products' %} ({{ product_count }})</a>{% endif %}
+</section>
+{% endif %}
+{% endwith %}
 {% endblock %}

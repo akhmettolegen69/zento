@@ -1,0 +1,13 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block title %}{% t 'Explore' %} · Zento{% endblock %}
+{% block content %}
+<section class="explore">
+  <form class="searchbar" id="search" action="{% url 'explore' %}" method="get" role="search">
+    {% include 'shop/_icon.html' with i='search' size=16 %}
+    <input name="q" placeholder="{% t 'Search stores and products' %}" value="{{ q }}" autocomplete="off">
+    {% if active_category %}<input type="hidden" name="category" value="{{ active_category }}">{% endif %}
+  </form>
+  <div id="catalog">{% include 'shop/_catalog.html' %}</div>
+</section>
+{% endblock %}

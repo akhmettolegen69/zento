@@ -47,9 +47,32 @@ class Category(models.Model):
         return self.name
 
 
+class Store(models.Model):
+    name = models.CharField(max_length=60)
+    slug = models.SlugField(unique=True, help_text='Username shown as @username, e.g. zento')
+    logo = models.ImageField(upload_to='stores/', blank=True)
+    bio = models.TextField(blank=True)
+    city = models.CharField(max_length=60, blank=True)
+    verified = models.BooleanField(default=False, help_text='Show the blue check next to the username')
+    position = models.PositiveIntegerField(default=0)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['position', 'name']
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def initial(self):
+        return (self.name[:1] or self.slug[:1]).upper()
+
+
 class Product(models.Model):
     BADGES = [('', 'None'), ('new', 'New'), ('popular', 'Popular'), ('sale', 'Sale')]
 
+    store = models.ForeignKey(Store, on_delete=models.PROTECT, related_name='products')
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to='products/')
@@ -60,6 +83,7 @@ class Product(models.Model):
     delivery_days_min = models.PositiveSmallIntegerField('delivery from (days)', default=7)
     delivery_days_max = models.PositiveSmallIntegerField('delivery to (days)', default=14)
     badge = models.CharField(max_length=10, choices=BADGES, blank=True, default='')
+    pinned = models.BooleanField(default=False, help_text='Pinned products appear in the main feed and first on the store page')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -78,10 +102,26 @@ class Product(models.Model):
             return str(self.delivery_days_min)
         return f'{self.delivery_days_min}–{self.delivery_days_max}'
 
+    @property
+    def gallery(self):
+        """Main image followed by extra photos (uses prefetched `photos` when available)."""
+        return [self.image] + [ph.image for ph in self.photos.all()]
+
+
+class ProductImage(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='photos')
+    image = models.ImageField(upload_to='products/')
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['position', 'id']
+
 
 class Story(models.Model):
     title = models.CharField(max_length=40, help_text='Label under the circle')
     cover = models.ImageField(upload_to='stories/')
+    store = models.ForeignKey(Store, null=True, blank=True, on_delete=models.CASCADE, related_name='stories',
+                              help_text='Store whose avatar and name are shown on the story ring')
     product = models.ForeignKey(Product, null=True, blank=True, on_delete=models.SET_NULL,
                                 help_text='Optional product this story links to')
     active = models.BooleanField(default=True)

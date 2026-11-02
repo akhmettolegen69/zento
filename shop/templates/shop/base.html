@@ -1,47 +1,57 @@
-{% load static zento %}<!doctype html>
+{% load static zento %}{% with here=request.resolver_match.url_name %}<!doctype html>
 <html lang="{{ lang }}">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}Zento{% endblock %}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/zento.css' %}">
+  <link rel="stylesheet" href="{% asset 'css/zento.css' %}">
   <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-<div class="sheet">
-  <header class="nav">
-    <a class="logo" href="{% url 'home' %}">ZENTO<span>.</span></a>
-    <nav class="nav-links" id="nav-links">
-      <a href="{% url 'home' %}#catalog">{% t 'Catalog' %}</a>
-      <a href="#delivery">{% t 'Delivery' %}</a>
-      <a href="#contact">{% t 'Contact' %}</a>
-    </nav>
-    <div class="nav-right">
-      <div class="lang">
-        <a href="{% url 'set_language' 'ru' %}" class="{% if lang == 'ru' %}on{% endif %}">RU</a>
-        <a href="{% url 'set_language' 'kk' %}" class="{% if lang == 'kk' %}on{% endif %}">KK</a>
-        <a href="{% url 'set_language' 'en' %}" class="{% if lang == 'en' %}on{% endif %}">EN</a>
-      </div>
-      <a class="cart-link" href="{% url 'cart' %}" title="{% t 'Cart' %}">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6L5 3H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>
-        <span id="cart-badge">{% include 'shop/_cart_badge.html' %}</span>
-      </a>
-      <a class="btn" href="{% url 'cart' %}">{% t 'Cart' %}</a>
-      <button class="burger" onclick="document.getElementById('nav-links').classList.toggle('open')" aria-label="Menu">☰</button>
+<aside class="side">
+  <a class="logo" href="{% url 'home' %}">Zento</a>
+  <a class="logo-mark" href="{% url 'home' %}" aria-label="Zento">Z</a>
+  <nav class="side-nav">
+    <a href="{% url 'home' %}" class="{% if here == 'home' %}on{% endif %}">{% include 'shop/_icon.html' with i='home' %}<span>{% t 'Home' %}</span></a>
+    <a href="{% url 'explore' %}#search" class="{% if here == 'explore' and q %}on{% endif %}">{% include 'shop/_icon.html' with i='search' %}<span>{% t 'Search' %}</span></a>
+    <a href="{% url 'explore' %}" class="{% if here == 'explore' and not q %}on{% endif %}">{% include 'shop/_icon.html' with i='explore' %}<span>{% t 'Explore' %}</span></a>
+    <a href="{% url 'cart' %}" class="{% if here == 'cart' or here == 'checkout' %}on{% endif %}"><i class="ic-wrap">{% include 'shop/_icon.html' with i='bag' %}<span class="cart-badge" id="cart-badge">{% include 'shop/_cart_badge.html' %}</span></i><span>{% t 'Cart' %}</span></a>
+  </nav>
+  <details class="side-more">
+    <summary>{% include 'shop/_icon.html' with i='globe' %}<span>{% t 'Language' %}</span></summary>
+    <div class="menu">
+      <a href="{% url 'set_language' 'ru' %}" class="{% if lang == 'ru' %}on{% endif %}">Русский</a>
+      <a href="{% url 'set_language' 'kk' %}" class="{% if lang == 'kk' %}on{% endif %}">Қазақша</a>
+      <a href="{% url 'set_language' 'en' %}" class="{% if lang == 'en' %}on{% endif %}">English</a>
     </div>
-  </header>
+  </details>
+</aside>
+
+<header class="topbar">
+  <a class="logo" href="{% url 'home' %}">Zento</a>
+  <div class="topbar-right">
+    <details class="lang-mini"><summary>{{ lang|upper }}</summary><div class="menu">
+      <a href="{% url 'set_language' 'ru' %}">Русский</a><a href="{% url 'set_language' 'kk' %}">Қазақша</a><a href="{% url 'set_language' 'en' %}">English</a>
+    </div></details>
+    <a href="{% url 'cart' %}" class="ic-wrap" aria-label="{% t 'Cart' %}">{% include 'shop/_icon.html' with i='bag' %}<span class="cart-badge" id="cart-badge-top">{% include 'shop/_cart_badge.html' %}</span></a>
+  </div>
+</header>
+
+<main class="main">
   {% block content %}{% endblock %}
-  <footer class="footer" id="contact">
-    <div class="foot-cols">
-      <div><h4>{% t 'Catalog' %}</h4><a href="{% url 'home' %}">{% t 'All' %}</a>
-        {% for c in nav_categories %}<a href="{% url 'home' %}?category={{ c.slug }}#catalog">{{ c.name }}</a>{% endfor %}</div>
-      <div id="delivery"><h4>{% t 'Delivery' %}</h4><a>{% t 'Payment' %}</a><a>{% t 'Prices in KZT and CNY' %}</a></div>
-      <div><h4>{% t 'Useful links' %}</h4><a>{% t 'About us' %}</a><a href="{% url 'admin:index' %}">{% t 'Admin' %}</a></div>
-    </div>
-    <div class="foot-bottom"><span class="logo small">ZENTO<span>.</span></span><small>© Zento · {% t 'All rights reserved' %}</small></div>
+  <footer class="footer">
+    <nav><a href="{% url 'explore' %}">{% t 'Catalog' %}</a><span>{% t 'Delivery' %}</span><span>{% t 'Prices in KZT and CNY' %}</span><a href="{% url 'admin:index' %}">{% t 'Admin' %}</a></nav>
+    <small>© {% now 'Y' %} Zento · {% t 'All rights reserved' %}</small>
   </footer>
-</div>
+</main>
+
+<nav class="tabbar">
+  <a href="{% url 'home' %}" class="{% if here == 'home' %}on{% endif %}" aria-label="{% t 'Home' %}">{% include 'shop/_icon.html' with i='home' %}</a>
+  <a href="{% url 'explore' %}#search" class="{% if here == 'explore' %}on{% endif %}" aria-label="{% t 'Search' %}">{% include 'shop/_icon.html' with i='search' %}</a>
+  <a href="{% url 'cart' %}" class="{% if here == 'cart' or here == 'checkout' %}on{% endif %}" aria-label="{% t 'Cart' %}">{% include 'shop/_icon.html' with i='bag' %}</a>
+</nav>
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="{% asset 'js/app.js' %}" defer></script>
+{% block scripts %}{% endblock %}
 </body>
-</html>
+</html>{% endwith %}
