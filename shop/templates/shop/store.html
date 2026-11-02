@@ -1,0 +1,43 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block title %}{{ store.name }} (@{{ store.slug }}) · Zento{% endblock %}
+{% block content %}
+<section class="profile">
+  <header class="profile-head">
+    <div class="profile-av">{% include 'shop/_avatar.html' with size='xl' %}</div>
+    <div class="profile-info">
+      <div class="profile-row">
+        <h1 class="uname">{{ store.slug }}</h1>{% include 'shop/_verified.html' %}
+        <button class="btn btn-gray" data-share="{% url 'store' store.slug %}" data-title="{{ store.name }}">{% t 'Share' %}</button>
+      </div>
+      <ul class="stats">
+        <li><b>{{ product_count }}</b> {% plural product_count 'product' %}</li>
+        <li><b>{{ available_count }}</b> {% t 'in stock' %}</li>
+        <li><b>{{ highlights|length }}</b> {% plural highlights|length 'category' %}</li>
+      </ul>
+      <div class="bio">
+        <b>{{ store.name }}</b>
+        {% if store.city %}<div class="muted">{{ store.city }}</div>{% endif %}
+        {% if store.bio %}<p>{{ store.bio|linebreaksbr }}</p>{% endif %}
+      </div>
+    </div>
+  </header>
+
+  {% if highlights|length > 1 %}
+  <nav class="highlights" aria-label="{% t 'Categories' %}">
+    <a href="{% url 'store' store.slug %}" class="hl {% if not active_category %}on{% endif %}"><span class="hl-ring">{% include 'shop/_icon.html' with i='grid' %}</span><em>{% t 'All' %}</em></a>
+    {% for c in highlights %}
+    <a href="?category={{ c.slug }}" class="hl {% if active_category == c.slug %}on{% endif %}">
+      <span class="hl-ring">{% if c.image %}<img src="{{ c.image.url }}" alt="">{% else %}<i style="background:{{ c.color }}">{{ c.name|slice:':1' }}</i>{% endif %}</span><em>{{ c.name }}</em>
+    </a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+
+  <div class="profile-tabs"><span class="on">{% include 'shop/_icon.html' with i='grid' size=12 stroke='2.2' %} {% t 'Products' %}</span></div>
+  <div class="tiles">
+    {% include 'shop/_grid.html' %}
+    {% if not page.object_list %}<div class="empty span-all">{% include 'shop/_icon.html' with i='bag' size=48 stroke='1.2' %}<h2>{% t 'No products yet' %}</h2></div>{% endif %}
+  </div>
+</section>
+{% endblock %}

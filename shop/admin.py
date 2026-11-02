@@ -1,13 +1,13 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Category, Order, OrderItem, Product, SiteSettings, Story, StorySlide
+from .models import Category, Order, OrderItem, Product, ProductImage, SiteSettings, Store, Story, StorySlide
 
 admin.site.site_header = 'Zento admin'
 
 
 def thumb(obj):
-    f = getattr(obj, 'image', None) or getattr(obj, 'cover', None)
+    f = getattr(obj, 'image', None) or getattr(obj, 'cover', None) or getattr(obj, 'logo', None)
     return format_html('<img src="{}" style="height:48px;border-radius:8px">', f.url) if f else '—'
 
 
@@ -27,13 +27,45 @@ class CategoryAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
 
 
+class StoreProductInline(admin.TabularInline):
+    model = Product
+    fields = ('name', 'price_kzt', 'available', 'pinned')
+    extra = 0
+    show_change_link = True
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False  # products need an image: add them from the Products page
+
+
+@admin.register(Store)
+class StoreAdmin(admin.ModelAdmin):
+    list_display = (thumb, 'name', 'slug', 'city', 'verified', 'active', 'position', 'product_count')
+    list_editable = ('verified', 'active', 'position')
+    prepopulated_fields = {'slug': ('name',)}
+    search_fields = ('name', 'slug')
+    inlines = [StoreProductInline]
+
+    @admin.display(description='Products')
+    def product_count(self, obj):
+        return obj.products.count()
+
+
+class PhotoInline(admin.TabularInline):
+    model = ProductImage
+    extra = 1
+    verbose_name_plural = 'Extra photos (carousel)'
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = (thumb, 'name', 'category', 'price_kzt', 'price_cny_display', 'available',
-                    'delivery_days_min', 'delivery_days_max', 'badge')
-    list_editable = ('price_kzt', 'available', 'badge')
-    list_filter = ('available', 'category')
-    search_fields = ('name',)
+    list_display = (thumb, 'name', 'store', 'category', 'price_kzt', 'price_cny_display', 'available',
+                    'pinned', 'delivery_days_min', 'delivery_days_max', 'badge')
+    list_editable = ('price_kzt', 'available', 'pinned', 'badge')
+    list_filter = ('store', 'pinned', 'available', 'category')
+    list_select_related = ('store', 'category')
+    search_fields = ('name', 'store__name')
+    inlines = [PhotoInline]
 
     @admin.display(description='Price (CNY)')
     def price_cny_display(self, obj):
@@ -47,7 +79,7 @@ class SlideInline(admin.TabularInline):
 
 @admin.register(Story)
 class StoryAdmin(admin.ModelAdmin):
-    list_display = (thumb, 'title', 'product', 'active', 'expires_at', 'position')
+    list_display = (thumb, 'title', 'store', 'product', 'active', 'expires_at', 'position')
     list_editable = ('active', 'position')
     inlines = [SlideInline]
 

@@ -5,11 +5,13 @@
   var data = JSON.parse(dataEl.textContent);
   var img = viewer.querySelector('.v-img'), caption = viewer.querySelector('.v-caption');
   var bars = viewer.querySelector('.bars'), link = viewer.querySelector('.v-link');
+  var av = viewer.querySelector('.v-av'), name = viewer.querySelector('.v-name');
   var DURATION = 5000, order = Object.keys(data), si = 0, idx = 0, timer = null;
 
   function show() {
     var story = data[order[si]], slide = story.slides[idx];
     img.src = slide.img; caption.textContent = slide.caption || '';
+    av.src = story.avatar; name.textContent = story.name;
     link.hidden = !story.link; if (story.link) link.href = story.link;
     bars.innerHTML = story.slides.map(function (_, i) {
       return '<i class="' + (i < idx ? 'done' : '') + '"><b' + (i === idx ? ' style="animation-duration:' + DURATION + 'ms"' : '') + '></b></i>';

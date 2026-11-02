@@ -1,24 +1,38 @@
 {% load zento %}
-<div class="tabs">
-  <a class="tab {% if not active_category %}on{% endif %}" hx-get="?available={% if available_only %}1{% else %}0{% endif %}" hx-target="#catalog" hx-push-url="false" href="?#catalog">{% t 'All' %}</a>
-  {% for c in categories %}
-  <a class="tab {% if active_category == c.slug %}on{% endif %}" hx-get="?category={{ c.slug }}&available={% if available_only %}1{% else %}0{% endif %}" hx-target="#catalog" href="?category={{ c.slug }}#catalog">{{ c.name }}</a>
+{% if stores %}
+<div class="store-results">
+  {% for store in stores %}
+  <a class="suggest-row" href="{% url 'store' store.slug %}">
+    {% include 'shop/_avatar.html' with size='m' %}
+    <span class="grow"><b class="uname">{{ store.slug }}</b>{% include 'shop/_verified.html' %}<br><small class="muted">{{ store.name }} · {{ store.n }} {% plural store.n 'product' %}</small></span>
+  </a>
   {% endfor %}
 </div>
-<form class="filters" hx-get="{% url 'home' %}" hx-target="#catalog" hx-trigger="change, submit">
-  <input type="hidden" name="category" value="{{ active_category }}">
-  <input type="number" name="max_price" min="0" placeholder="{% t 'Max price (₸)' %}" value="{{ filters.max_price }}">
-  <select name="delivery">
-    <option value="">{% t 'Delivery time' %}: {% t 'Any' %}</option>
-    <option value="7" {% if filters.delivery == '7' %}selected{% endif %}>{% t 'Up to 7 days' %}</option>
-    <option value="14" {% if filters.delivery == '14' %}selected{% endif %}>{% t 'Up to 14 days' %}</option>
-    <option value="30" {% if filters.delivery == '30' %}selected{% endif %}>{% t 'Up to 30 days' %}</option>
-  </select>
-  <label class="toggle"><span>{% t 'Available only' %}</span>
-    <input type="hidden" name="available" value="0">
-    <input type="checkbox" name="available" value="1" {% if available_only %}checked{% endif %}><i></i></label>
-  <button class="btn" type="submit">{% t 'Apply' %}</button>
-</form>
-<div class="grid">
-  {% for p in products %}{% include 'shop/_card.html' %}{% empty %}<p class="muted">{% t 'Nothing found' %}</p>{% endfor %}
+{% endif %}
+<div class="chips">
+  <a class="chip {% if not active_category %}on{% endif %}" hx-get="?{% qs category='' page='' %}" hx-target="#catalog" href="?{% qs category='' page='' %}">{% t 'All' %}</a>
+  {% for c in categories %}
+  <a class="chip {% if active_category == c.slug %}on{% endif %}" hx-get="?{% qs category=c.slug page='' %}" hx-target="#catalog" href="?{% qs category=c.slug page='' %}">{{ c.name }}</a>
+  {% endfor %}
+</div>
+<details class="filters-wrap"{% if filters.max_price or filters.delivery or not available_only %} open{% endif %}>
+  <summary>{% t 'Filters' %}</summary>
+  <form class="filters" hx-get="{% url 'explore' %}" hx-target="#catalog" hx-trigger="change, submit">
+    <input type="hidden" name="category" value="{{ active_category }}">
+    <input type="hidden" name="q" value="{{ q }}">
+    <input type="number" name="max_price" min="0" placeholder="{% t 'Max price (₸)' %}" value="{{ filters.max_price }}">
+    <select name="delivery">
+      <option value="">{% t 'Delivery time' %}: {% t 'Any' %}</option>
+      <option value="7" {% if filters.delivery == '7' %}selected{% endif %}>{% t 'Up to 7 days' %}</option>
+      <option value="14" {% if filters.delivery == '14' %}selected{% endif %}>{% t 'Up to 14 days' %}</option>
+      <option value="30" {% if filters.delivery == '30' %}selected{% endif %}>{% t 'Up to 30 days' %}</option>
+    </select>
+    <label class="toggle"><span>{% t 'Available only' %}</span>
+      <input type="hidden" name="available" value="0">
+      <input type="checkbox" name="available" value="1" {% if available_only %}checked{% endif %}><i></i></label>
+  </form>
+</details>
+<div class="tiles">
+  {% include 'shop/_grid.html' %}
+  {% if not page.object_list %}<p class="muted span-all empty-small">{% t 'Nothing found' %}</p>{% endif %}
 </div>

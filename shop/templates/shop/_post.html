@@ -1,0 +1,40 @@
+{% load zento %}{% with store=p.store gallery=p.gallery %}
+<article class="post">
+  <header class="post-head">
+    <a href="{% url 'store' store.slug %}" class="post-av">{% include 'shop/_avatar.html' with size='s' ring=True %}</a>
+    <div class="post-who">
+      <a href="{% url 'store' store.slug %}" class="uname">{{ store.slug }}</a>{% include 'shop/_verified.html' %}
+      {% if p.pinned %}<span class="dot">·</span><span class="muted pinned-label">{% include 'shop/_icon.html' with i='pin' size=12 %} {% t 'Pinned' %}</span>{% endif %}
+      {% if store.city %}<div class="post-sub">{{ store.city }}</div>{% endif %}
+    </div>
+    <a href="{% url 'store' store.slug %}" class="btn-follow">{% t 'View store' %}</a>
+  </header>
+
+  <div class="media" data-carousel>
+    <div class="slides">
+      {% for img in gallery %}<a href="{% url 'product' p.pk %}" class="slide"><img src="{{ img.url }}" alt="{{ p.name }}" loading="lazy"></a>{% endfor %}
+    </div>
+    {% if gallery|length > 1 %}
+    <button class="nav-btn prev" aria-label="prev" hidden>‹</button><button class="nav-btn next" aria-label="next">›</button>
+    <div class="dots">{% for img in gallery %}<i class="{% if forloop.first %}on{% endif %}"></i>{% endfor %}</div>
+    {% endif %}
+    {% if p.badge %}<span class="tag tag-{{ p.badge }}">{% if p.badge == 'new' %}{% t 'New' %}{% elif p.badge == 'popular' %}{% t 'Popular' %}{% else %}{% t 'Sale' %}{% endif %}</span>{% endif %}
+    {% if not p.available %}<span class="sold">{% t 'Out of stock' %}</span>{% endif %}
+  </div>
+
+  <div class="post-actions">
+    {% if p.available %}
+    <button class="act" hx-post="{% url 'cart_action' 'add' p.pk %}" hx-target="#cart-badge" hx-swap="innerHTML" aria-label="{% t 'Add to cart' %}" title="{% t 'Add to cart' %}">{% include 'shop/_icon.html' with i='bag' %}</button>
+    {% endif %}
+    <button class="act" data-share="{% url 'product' p.pk %}" data-title="{{ p.name }}" aria-label="{% t 'Share' %}" title="{% t 'Share' %}">{% include 'shop/_icon.html' with i='share' %}</button>
+    <a class="act" href="{% url 'store' store.slug %}" aria-label="{% t 'View store' %}" title="{% t 'View store' %}">{% include 'shop/_icon.html' with i='store' %}</a>
+    <div class="post-price"><b>{{ p.price_kzt|kzt }}</b> <span class="cny">{{ p.price_cny|cny }}</span></div>
+  </div>
+
+  <div class="post-body">
+    <p class="caption"><a href="{% url 'store' store.slug %}" class="uname">{{ store.slug }}</a> <b>{{ p.name }}</b>{% if p.description %} — <span data-more>{{ p.description|truncatechars:140 }}</span>{% endif %}</p>
+    <p class="muted small">{% include 'shop/_icon.html' with i='truck' size=14 %} {% t 'Delivery in' %} {{ p.delivery_range }} {% t 'days' %}{% if p.category %} · {{ p.category.name }}{% endif %}</p>
+    {% if p.store_total > 1 %}<a class="muted view-all" href="{% url 'store' store.slug %}">{% t 'View all products' %} ({{ p.store_total }})</a>{% endif %}
+  </div>
+</article>
+{% endwith %}
