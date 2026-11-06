@@ -154,3 +154,7 @@ LOGGING = {
     'handlers': {'console': {'class': 'logging.StreamHandler'}},
     'root': {'handlers': ['console'], 'level': 'WARNING'},
 }
+
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'home'

@@ -1,0 +1,1 @@
+{% load zento %}<button class="{{ cls }}{% if store.pk in followed_ids %} on{% endif %}" hx-post="{% url 'follow' store.slug %}" hx-vals='{"cls": "{{ cls }}"}' hx-swap="outerHTML">{% if store.pk in followed_ids %}{% t 'Following' %}{% else %}{% t 'Follow' %}{% endif %}</button>

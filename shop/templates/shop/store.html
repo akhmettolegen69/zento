@@ -8,10 +8,12 @@
     <div class="profile-info">
       <div class="profile-row">
         <h1 class="uname">{{ store.slug }}</h1>{% include 'shop/_verified.html' %}
+        {% include 'shop/_follow.html' with cls='btn' %}
         <button class="btn btn-gray" data-share="{% url 'store' store.slug %}" data-title="{{ store.name }}">{% t 'Share' %}</button>
       </div>
       <ul class="stats">
         <li><b>{{ product_count }}</b> {% plural product_count 'product' %}</li>
+        <li><b>{{ follower_count }}</b> {% t 'followers' %}</li>
         <li><b>{{ available_count }}</b> {% t 'in stock' %}</li>
         <li><b>{{ highlights|length }}</b> {% plural highlights|length 'category' %}</li>
       </ul>

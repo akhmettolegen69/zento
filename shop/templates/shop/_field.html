@@ -1,0 +1,2 @@
+{% load zento %}<label>{% t label %}<input name="{{ f.html_name }}" type="{{ type|default:'text' }}" value="{% if type != 'password' %}{{ f.value|default_if_none:'' }}{% endif %}" autocomplete="{{ ac }}"{% if not optional %} required{% endif %}{% if inputmode %} inputmode="{{ inputmode }}"{% endif %}></label>
+{% for e in f.errors %}<p class="error">{% t e %}</p>{% endfor %}

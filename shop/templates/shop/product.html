@@ -32,6 +32,7 @@
       {% if p.available %}
       <button class="btn btn-wide" hx-post="{% url 'cart_action' 'add' p.pk %}" hx-target="#cart-badge" hx-swap="innerHTML">{% include 'shop/_icon.html' with i='bag' size=18 %} {% t 'Add to cart' %}</button>
       {% else %}<p class="sold-text">{% t 'Out of stock' %}</p>{% endif %}
+      {% include 'shop/_like.html' with count=p.like_count %}
       <button class="act" data-share="{% url 'product' p.pk %}" data-title="{{ p.name }}" aria-label="{% t 'Share' %}">{% include 'shop/_icon.html' with i='share' %}</button>
     </div>
   </div>

@@ -1,0 +1,23 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block title %}{% t 'Account' %} · Zento{% endblock %}
+{% block content %}
+<section class="page narrow">
+  <form method="post" class="form">{% csrf_token %}
+    <h1>{% t 'Account' %}</h1>
+    {% for m in messages %}<p>{% t m.message %}</p>{% endfor %}
+    <p><b>@{{ user.username }}</b> · {{ user.profile.phone }}</p>
+    {% include 'shop/_field.html' with f=form.first_name label='First name' ac='given-name' %}
+    {% include 'shop/_field.html' with f=form.last_name label='Last name' ac='family-name' %}
+    <h3>{% t 'Change password' %}</h3>
+    <small>{% t 'Leave blank to keep the current password.' %}</small>
+    {% include 'shop/_field.html' with f=form.current_password label='Current password' type='password' ac='current-password' optional=1 %}
+    {% include 'shop/_field.html' with f=form.new_password label='New password' type='password' ac='new-password' optional=1 %}
+    <button class="btn">{% t 'Save' %}</button>
+  </form>
+  <p><a class="link-accent" href="{% url 'liked' %}">{% t 'Liked products' %}</a></p>
+  <form method="post" action="{% url 'logout' %}" class="form">{% csrf_token %}
+    <button class="btn btn-gray">{% t 'Log out' %}</button>
+  </form>
+</section>
+{% endblock %}
