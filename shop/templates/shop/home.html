@@ -12,6 +12,8 @@
       </button>
       {% endfor %}
     </div>
+    {% elif user.is_authenticated %}
+    <p class="muted stories-empty">{% t 'Follow stores to see their stories here.' %}</p>
     {% endif %}
 
     <div class="posts">
@@ -26,11 +28,13 @@
   <aside class="suggest">
     <div class="suggest-head"><span class="muted">{% t 'Stores' %}</span><a href="{% url 'explore' %}">{% t 'See all' %}</a></div>
     {% for store in suggested %}
-    <a class="suggest-row" href="{% url 'store' store.slug %}">
-      {% include 'shop/_avatar.html' with size='m' %}
-      <span class="grow"><b class="uname">{{ store.slug }}</b>{% include 'shop/_verified.html' %}<br><small class="muted">{{ store.name }} · {{ store.n }} {% plural store.n 'product' %}</small></span>
-      <span class="link-blue">{% t 'View' %}</span>
-    </a>
+    <div class="suggest-row">
+      <a class="suggest-link" href="{% url 'store' store.slug %}">
+        {% include 'shop/_avatar.html' with size='m' %}
+        <span class="grow"><b class="uname">{{ store.slug }}</b>{% include 'shop/_verified.html' %}<br><small class="muted">{{ store.name }} · {{ store.n }} {% plural store.n 'product' %}</small></span>
+      </a>
+      {% include 'shop/_follow.html' with cls='btn-follow' %}
+    </div>
     {% endfor %}
   </aside>
 </div>

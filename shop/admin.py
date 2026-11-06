@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Category, Order, OrderItem, Product, ProductImage, SiteSettings, Store, Story, StorySlide
+from .models import Category, Follow, Order, OrderItem, Product, ProductImage, Profile, SiteSettings, Store, Story, StorySlide
 
 admin.site.site_header = 'Zento admin'
 
@@ -84,6 +84,12 @@ class StoryAdmin(admin.ModelAdmin):
     inlines = [SlideInline]
 
 
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ('phone', 'user')
+    search_fields = ('phone', 'user__first_name', 'user__last_name')
+
+
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
@@ -97,3 +103,9 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ('status',)
     readonly_fields = ('total_kzt', 'total_cny', 'rate', 'payment_ref', 'created_at')
     inlines = [OrderItemInline]
+
+
+@admin.register(Follow)
+class FollowAdmin(admin.ModelAdmin):
+    list_display = ('user', 'store', 'created_at')
+    list_filter = ('store',)

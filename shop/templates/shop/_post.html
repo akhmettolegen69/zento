@@ -7,7 +7,7 @@
       {% if p.pinned %}<span class="dot">·</span><span class="muted pinned-label">{% include 'shop/_icon.html' with i='pin' size=12 %} {% t 'Pinned' %}</span>{% endif %}
       {% if store.city %}<div class="post-sub">{{ store.city }}</div>{% endif %}
     </div>
-    <a href="{% url 'store' store.slug %}" class="btn-follow">{% t 'View store' %}</a>
+    {% include 'shop/_follow.html' with cls='btn-follow' %}
   </header>
 
   <div class="media" data-carousel>

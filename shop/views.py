@@ -1,16 +1,22 @@
 from decimal import Decimal, InvalidOperation
+from urllib.parse import quote, urlparse
 
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, OuterRef, Q, Subquery
-from django.http import Http404, HttpResponseBadRequest
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from .accounts import AccountForm, LoginForm, RegisterForm
 from .cart import Cart
-from .models import Category, Order, OrderItem, Product, SiteSettings, Store, Story, kzt_to_cny
+from .models import Category, Follow, Order, OrderItem, Product, SiteSettings, Store, Story, kzt_to_cny
 from .payments import get_provider
 
 
@@ -61,9 +67,13 @@ def feed_products():
             .annotate(store_total=Subquery(store_total)))
 
 
-def _stories():
-    stories = list(Story.visible().filter(Q(store__isnull=True) | Q(store__active=True))
-                   .select_related('product', 'store').prefetch_related('slides'))
+def _stories(request):
+    qs = Story.visible()
+    if request.user.is_authenticated:  # personalized: only stores the user follows
+        qs = qs.filter(store__active=True, store__follows__user=request.user)
+    else:
+        qs = qs.filter(Q(store__isnull=True) | Q(store__active=True))
+    stories = list(qs.select_related('product', 'store').prefetch_related('slides'))
     data = {}
     for s in stories:
         if s.product_id:
@@ -87,7 +97,7 @@ def home(request):
     ctx = {'page': page}
     if _is_fragment(request, 'feed-more'):
         return render(request, 'shop/_posts.html', ctx)
-    stories, story_data = _stories()
+    stories, story_data = _stories(request)
     ctx.update(stories=stories, story_data=story_data,
                suggested=Store.objects.filter(active=True).annotate(n=Count('products'))[:5])
     return render(request, 'shop/home.html', ctx)
@@ -126,6 +136,7 @@ def store_profile(request, slug):
         'highlights': highlights,
         'active_category': active_category,
         'product_count': store.products.count(),
+        'follower_count': store.follows.count(),
         'available_count': store.products.filter(available=True).count(),
         'show_pins': True,
     }
@@ -186,6 +197,9 @@ def checkout(request):
     ctx = _cart_ctx(request)
     if not ctx['rows']:
         return redirect('cart')
+    u = request.user
+    if request.method != 'POST' and u.is_authenticated and hasattr(u, 'profile'):
+        ctx['form'] = {'name': u.get_full_name(), 'phone': u.profile.phone}
     if request.method == 'POST':
         name, phone, address = (request.POST.get(k, '').strip() for k in ('name', 'phone', 'address'))
         if not (name and phone and address):
@@ -233,3 +247,67 @@ def order_done(request, pk):
     if request.session.get('order_id') != order.pk:
         raise Http404
     return render(request, 'shop/order_done.html', {'order': order})
+
+
+def _next_url(request):
+    nxt = request.POST.get('next') or request.GET.get('next') or ''
+    ok = url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()},
+                                         require_https=request.is_secure())
+    return nxt if ok else reverse('home')
+
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect(_next_url(request))
+    form = LoginForm(request.POST or None, request=request)
+    if request.method == 'POST' and form.is_valid():
+        login(request, form.user)
+        return redirect(_next_url(request))
+    return render(request, 'shop/login.html', {'form': form, 'next': _next_url(request)})
+
+
+def register(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+    form = RegisterForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        user = form.save()
+        login(request, user)
+        return redirect(_next_url(request))
+    return render(request, 'shop/register.html', {'form': form, 'next': _next_url(request)})
+
+
+@require_POST
+def logout_view(request):
+    logout(request)
+    return redirect('home')
+
+
+@login_required
+def account(request):
+    form = AccountForm(request.POST or None, user=request.user)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        update_session_auth_hash(request, request.user)
+        messages.success(request, 'Saved.')
+        return redirect('account')
+    return render(request, 'shop/account.html', {'form': form})
+
+
+@require_POST
+def follow_toggle(request, slug):
+    store = get_object_or_404(Store, slug=slug, active=True)
+    if not request.user.is_authenticated:
+        here = urlparse(request.headers.get('HX-Current-URL', '')).path or reverse('store', args=[slug])
+        url = f"{reverse('login')}?next={quote(here)}"
+        if request.headers.get('HX-Request'):
+            return HttpResponse(status=204, headers={'HX-Redirect': url})
+        return redirect(url)
+    deleted, _ = Follow.objects.filter(user=request.user, store=store).delete()
+    if not deleted:
+        Follow.objects.get_or_create(user=request.user, store=store)
+    if request.headers.get('HX-Request'):
+        return render(request, 'shop/_follow.html', {
+            'store': store, 'cls': request.POST.get('cls', 'btn-follow'),
+            'followed_ids': {store.pk} if not deleted else set()})
+    return redirect(request.META.get('HTTP_REFERER') or reverse('store', args=[slug]))

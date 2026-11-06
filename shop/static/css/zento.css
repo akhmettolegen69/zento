@@ -59,6 +59,11 @@ img{display:block}
 .suggest-head{display:flex;justify-content:space-between;font-weight:600;margin-bottom:12px}
 .suggest-head a{font-size:12px}
 .suggest-row{display:flex;align-items:center;gap:12px;padding:8px 0}
+.suggest-link{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.btn-follow{background:none;border:0;padding:0;cursor:pointer;font-family:inherit}
+.btn-follow.on{color:var(--ink)}
+.btn.on{background:var(--soft);color:var(--ink)}
+.stories-empty{font-size:13px;padding:8px 2px 16px;margin:0}
 .suggest-row .uname{font-size:14px}
 
 .stories{display:flex;gap:14px;overflow-x:auto;padding:8px 2px 16px;margin-bottom:8px;scrollbar-width:none}
@@ -187,6 +192,7 @@ img{display:block}
 
 /* ---------- cart / checkout / pages ---------- */
 .page{max-width:935px;width:100%;margin:0 auto;padding:32px 20px 40px}
+.page.narrow{max-width:420px}
 .page h1{font-size:24px;margin:0 0 20px}
 .narrow{max-width:520px}
 .two{display:grid;grid-template-columns:1.2fr 1fr;gap:40px}
