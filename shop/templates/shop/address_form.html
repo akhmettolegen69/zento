@@ -1,0 +1,16 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block title %}{% t 'Address' %} · Zento{% endblock %}
+{% block content %}
+<section class="page narrow">
+  {% url 'addresses' as back %}{% include 'shop/_back.html' with to=back label='My delivery addresses' %}
+  <form method="post" class="form">{% csrf_token %}
+    <h1>{% if obj %}{% t 'Edit' %}{% else %}{% t 'Add address' %}{% endif %}</h1>
+    {% include 'shop/_field.html' with f=form.label label='Label (Home, Office…)' %}
+    {% include 'shop/_field.html' with f=form.city label='City' ac='address-level2' %}
+    <label>{% t 'Delivery address' %}<textarea name="address" rows="3" required>{{ form.address.value|default_if_none:'' }}</textarea></label>
+    <label class="check"><input type="checkbox" name="is_default"{% if form.is_default.value %} checked{% endif %}> {% t 'Default' %}</label>
+    <button class="btn">{% t 'Save' %}</button>
+  </form>
+</section>
+{% endblock %}

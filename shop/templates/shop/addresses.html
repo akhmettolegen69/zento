@@ -1,0 +1,17 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block title %}{% t 'My delivery addresses' %} · Zento{% endblock %}
+{% block content %}
+<section class="page narrow">
+  {% url 'account' as back %}{% include 'shop/_back.html' with to=back %}
+  <h1>{% t 'My delivery addresses' %}</h1>
+  {% for a in addresses %}
+  <div class="addr">
+    <div class="grow"><b>{{ a.label }}</b>{% if a.is_default %} <em class="pill pill-paid">{% t 'Default' %}</em>{% endif %}<br><span class="muted">{{ a.full }}</span></div>
+    <a class="link-accent" href="{% url 'address_edit' a.pk %}">{% t 'Edit' %}</a>
+    <form method="post" action="{% url 'address_delete' a.pk %}">{% csrf_token %}<button class="link-del">{% t 'Remove' %}</button></form>
+  </div>
+  {% empty %}<p class="muted">{% t 'No saved addresses yet' %}</p>{% endfor %}
+  <a class="btn" href="{% url 'address_new' %}">{% t 'Add address' %}</a>
+</section>
+{% endblock %}

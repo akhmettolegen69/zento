@@ -1,0 +1,17 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block title %}{% t 'Payments & receipts' %} · Zento{% endblock %}
+{% block content %}
+<section class="page narrow">
+  {% url 'account' as back %}{% include 'shop/_back.html' with to=back %}
+  <h1>{% t 'Payments & receipts' %}</h1>
+  {% for o in page %}
+  <div class="pay-row">
+    <span class="grow"><b>{% t 'Order' %} #{{ o.pk }}</b><br><small class="muted">{{ o.created_at|date:'M j, Y' }}</small></span>
+    <b>{{ o.total_kzt|kzt }}</b>
+    <a class="link-accent" href="{% url 'receipt' o.pk %}">{% t 'Receipt' %}</a>
+  </div>
+  {% empty %}<p class="muted">{% t 'No payments yet' %}</p>{% endfor %}
+  {% include 'shop/_pager.html' %}
+</section>
+{% endblock %}

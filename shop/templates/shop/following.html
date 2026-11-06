@@ -1,0 +1,19 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block title %}{% t 'Followed stores' %} · Zento{% endblock %}
+{% block content %}
+<section class="page narrow">
+  {% url 'account' as back %}{% include 'shop/_back.html' with to=back %}
+  <h1>{% t 'Followed stores' %}</h1>
+  {% for store in stores %}
+  <div class="suggest-row">
+    <a class="suggest-link" href="{% url 'store' store.slug %}">
+      {% include 'shop/_avatar.html' with size='m' %}
+      <span class="grow"><b class="uname">{{ store.slug }}</b>{% include 'shop/_verified.html' %}<br><small class="muted">{{ store.name }} · {{ store.n }} {% plural store.n 'product' %}</small></span>
+    </a>
+    {% include 'shop/_follow.html' with cls='btn-follow' %}
+  </div>
+  {% empty %}<p class="muted">{% t 'You are not following any stores yet.' %}</p>
+  <a class="btn" href="{% url 'explore' %}">{% t 'Explore' %}</a>{% endfor %}
+</section>
+{% endblock %}

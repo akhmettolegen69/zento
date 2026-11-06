@@ -1,0 +1,11 @@
+{% load zento %}<a class="order-card" href="{% url 'order_detail' o.pk %}">
+  <span class="order-thumb">{% if o.thumb %}<img src="{{ o.thumb.url }}" alt="">{% else %}{% include 'shop/_icon.html' with i='bag' size=28 %}{% endif %}</span>
+  <span class="order-info">
+    <b>{% t 'Order' %} #{{ o.pk }}</b>
+    <span>{{ o.pcs|default:0 }} {% t 'pcs' %} · {{ o.total_kzt|kzt }}</span>
+    <em class="pill pill-{{ o.status }}">{% t o.get_status_display %}</em>
+    {% if o.est_delivery_from and o.est_delivery_to and o.status != 'delivered' and o.status != 'failed' %}<small class="muted">{% t 'Estimated delivery' %}: {{ o.est_delivery_from|date:'M j' }}–{{ o.est_delivery_to|date:'j' }}</small>
+    {% else %}<small class="muted">{{ o.created_at|date:'M j, Y' }}</small>{% endif %}
+  </span>
+  <span class="chev">{% include 'shop/_icon.html' with i='chev' size=20 %}</span>
+</a>

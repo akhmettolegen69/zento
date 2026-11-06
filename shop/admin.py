@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Category, Follow, Like, Order, OrderItem, Product, ProductImage, Profile, SiteSettings, Store, Story, StorySlide
+from .models import Address, Category, Follow, Like, Order, OrderItem, Product, ProductImage, Profile, SiteSettings, Store, Story, StorySlide
 
 admin.site.site_header = 'Zento admin'
 
@@ -86,7 +86,7 @@ class StoryAdmin(admin.ModelAdmin):
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('phone', 'user')
+    list_display = ('phone', 'user', 'company', 'city')
     search_fields = ('phone', 'user__first_name', 'user__last_name')
 
 
@@ -99,8 +99,10 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'phone', 'status', 'total_kzt', 'total_cny', 'created_at')
+    list_display = ('id', 'name', 'phone', 'user', 'status', 'total_kzt', 'total_cny', 'created_at')
     list_filter = ('status',)
+    list_editable = ('status',)
+    raw_id_fields = ('user',)
     readonly_fields = ('total_kzt', 'total_cny', 'rate', 'payment_ref', 'created_at')
     inlines = [OrderItemInline]
 
@@ -116,3 +118,9 @@ class LikeAdmin(admin.ModelAdmin):
     list_display = ('user', 'product', 'created_at')
     list_filter = ('product__store',)
     search_fields = ('user__username', 'product__name')
+
+
+@admin.register(Address)
+class AddressAdmin(admin.ModelAdmin):
+    list_display = ('user', 'label', 'city', 'is_default')
+    raw_id_fields = ('user',)

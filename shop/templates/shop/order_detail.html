@@ -1,0 +1,23 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block title %}{% t 'Order' %} #{{ order.pk }} · Zento{% endblock %}
+{% block content %}
+<section class="page narrow">
+  {% url 'orders' as back %}{% include 'shop/_back.html' with to=back label='Purchase history' %}
+  <h1>{% t 'Order' %} #{{ order.pk }}</h1>
+  <p><em class="pill pill-{{ order.status }}">{% t order.get_status_display %}</em>
+    {% if order.est_delivery_from and order.est_delivery_to and order.status != 'delivered' and order.status != 'failed' %}<small class="muted"> {% t 'Estimated delivery' %}: {{ order.est_delivery_from|date:'M j' }}–{{ order.est_delivery_to|date:'j' }}</small>{% endif %}</p>
+  {% for it in order.items.all %}
+  <div class="cart-row">
+    <span class="thumb" {% if it.product and it.product.image %}style="background-image:url('{{ it.product.image.url }}')"{% endif %}></span>
+    <span class="grow">{{ it.name }} × {{ it.quantity }}</span><b>{{ it.subtotal_kzt|kzt }}</b>
+  </div>
+  {% endfor %}
+  <div class="cart-total"><span>{% t 'Total' %}</span><b>{{ order.total_kzt|kzt }}<br><span class="cny">{{ order.total_cny|cny }}</span></b></div>
+  <p class="muted">{{ order.name }} · {{ order.phone }}<br>{{ order.address }}</p>
+  <div class="actions">
+    {% if order.status == 'pending' %}<form method="post" action="{% url 'order_pay' order.pk %}">{% csrf_token %}<button class="btn">{% t 'Pay now' %}</button></form>{% endif %}
+    {% if order.status in 'paid in_transit ready delivered' %}<a class="btn btn-gray" href="{% url 'receipt' order.pk %}">{% t 'Receipt' %}</a>{% endif %}
+  </div>
+</section>
+{% endblock %}

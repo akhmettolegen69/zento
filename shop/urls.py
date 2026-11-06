@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import account_views as acc, views
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -9,6 +9,19 @@ urlpatterns = [
     path('s/<slug:slug>/follow/', views.follow_toggle, name='follow'),
     path('product/<int:pk>/', views.product_detail, name='product'),
     path('product/<int:pk>/like/', views.like_toggle, name='like'),
+    path('account/', acc.account, name='account'),
+    path('account/edit/', acc.account_edit, name='account_edit'),
+    path('account/settings/', acc.account_settings, name='account_settings'),
+    path('account/orders/', acc.orders, name='orders'),
+    path('account/orders/<int:pk>/', acc.order_detail, name='order_detail'),
+    path('account/orders/<int:pk>/pay/', acc.order_pay, name='order_pay'),
+    path('account/orders/<int:pk>/receipt/', acc.receipt, name='receipt'),
+    path('account/payments/', acc.payments, name='payments'),
+    path('account/following/', acc.following, name='following'),
+    path('account/addresses/', acc.addresses, name='addresses'),
+    path('account/addresses/new/', acc.address_form, name='address_new'),
+    path('account/addresses/<int:pk>/edit/', acc.address_form, name='address_edit'),
+    path('account/addresses/<int:pk>/delete/', acc.address_delete, name='address_delete'),
     path('account/likes/', views.liked_products, name='liked'),
     path('lang/<str:code>/', views.set_language, name='set_language'),
     path('cart/', views.cart_view, name='cart'),
@@ -19,6 +32,5 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('register/', views.register, name='register'),
     path('logout/', views.logout_view, name='logout'),
-    path('account/', views.account, name='account'),
     path('order/<int:pk>/', views.order_done, name='order_done'),
 ]

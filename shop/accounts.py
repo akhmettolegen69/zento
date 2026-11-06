@@ -9,7 +9,7 @@ from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import transaction
 
-from .models import Profile
+from .models import Address, Profile
 
 User = get_user_model()
 BAD_PHONE = 'Enter a valid Kazakhstan phone number (+7 XXX XXX XX XX).'
@@ -58,6 +58,8 @@ class RegisterForm(forms.Form):
     last_name = forms.CharField(max_length=150)
     username = forms.CharField(max_length=150, validators=[UnicodeUsernameValidator()])
     phone = PhoneField()
+    company = forms.CharField(max_length=80, required=False)
+    city = forms.CharField(max_length=60, required=False)
     password = forms.CharField(strip=False, min_length=8, error_messages=PW_SHORT)
     password2 = forms.CharField(strip=False)
 
@@ -85,19 +87,24 @@ class RegisterForm(forms.Form):
             user = User.objects.create_user(
                 username=d['username'], password=d['password'],
                 first_name=d['first_name'], last_name=d['last_name'])
-            Profile.objects.create(user=user, phone=d['phone'])
+            Profile.objects.create(user=user, phone=d['phone'], company=d['company'], city=d['city'])
         return user
 
 
 class AccountForm(forms.Form):
     first_name = forms.CharField(max_length=150)
     last_name = forms.CharField(max_length=150)
+    company = forms.CharField(max_length=80, required=False)
+    city = forms.CharField(max_length=60, required=False)
     current_password = forms.CharField(strip=False, required=False)
     new_password = forms.CharField(strip=False, required=False, min_length=8, error_messages=PW_SHORT)
 
     def __init__(self, *args, user, **kwargs):
         self.user = user
-        kwargs.setdefault('initial', {'first_name': user.first_name, 'last_name': user.last_name})
+        prof = getattr(user, 'profile', None)
+        kwargs.setdefault('initial', {
+            'first_name': user.first_name, 'last_name': user.last_name,
+            'company': prof.company if prof else '', 'city': prof.city if prof else ''})
         super().__init__(*args, **kwargs)
 
     def clean(self):
@@ -112,3 +119,30 @@ class AccountForm(forms.Form):
         if d.get('new_password'):
             self.user.set_password(d['new_password'])
         self.user.save()
+        prof = getattr(self.user, 'profile', None)
+        if prof:
+            prof.company, prof.city = d['company'], d['city']
+            prof.save(update_fields=['company', 'city'])
+
+
+class AddressForm(forms.ModelForm):
+    class Meta:
+        model = Address
+        fields = ('label', 'city', 'address', 'is_default')
+        widgets = {'address': forms.Textarea(attrs={'rows': 3})}
+
+    def __init__(self, *args, user, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.user = self.user
+        others = Address.objects.filter(user=self.user).exclude(pk=obj.pk)
+        if not others.exists():
+            obj.is_default = True
+        with transaction.atomic():
+            if obj.is_default:
+                others.update(is_default=False)
+            obj.save()
+        return obj
