@@ -23,6 +23,7 @@
   </div>
 
   <div class="post-actions">
+    {% include 'shop/_like.html' with count=p.like_count %}
     {% if p.available %}
     <button class="act" hx-post="{% url 'cart_action' 'add' p.pk %}" hx-target="#cart-badge" hx-swap="innerHTML" aria-label="{% t 'Add to cart' %}" title="{% t 'Add to cart' %}">{% include 'shop/_icon.html' with i='bag' %}</button>
     {% endif %}

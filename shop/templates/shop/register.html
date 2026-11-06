@@ -13,7 +13,7 @@
     {% include 'shop/_field.html' with f=form.password label='Password' type='password' ac='new-password' %}
     {% include 'shop/_field.html' with f=form.password2 label='Repeat password' type='password' ac='new-password' %}
     <button class="btn">{% t 'Create account' %}</button>
-    <p>{% t 'Already registered?' %} <a href="{% url 'login' %}?next={{ next|urlencode }}">{% t 'Log in' %}</a></p>
+    <p>{% t 'Already registered?' %} <a class="link-accent" href="{% url 'login' %}?next={{ next|urlencode }}">{% t 'Log in' %}</a></p>
   </form>
 </section>
 {% endblock %}

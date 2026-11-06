@@ -10,7 +10,7 @@
     {% include 'shop/_field.html' with f=form.username label='Username' ac='username' %}
     {% include 'shop/_field.html' with f=form.password label='Password' type='password' ac='current-password' %}
     <button class="btn">{% t 'Log in' %}</button>
-    <p>{% t 'No account yet?' %} <a href="{% url 'register' %}?next={{ next|urlencode }}">{% t 'Sign up' %}</a></p>
+    <p>{% t 'No account yet?' %} <a class="link-accent" href="{% url 'register' %}?next={{ next|urlencode }}">{% t 'Sign up' %}</a></p>
   </form>
 </section>
 {% endblock %}

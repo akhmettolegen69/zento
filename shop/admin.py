@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Category, Follow, Order, OrderItem, Product, ProductImage, Profile, SiteSettings, Store, Story, StorySlide
+from .models import Category, Follow, Like, Order, OrderItem, Product, ProductImage, Profile, SiteSettings, Store, Story, StorySlide
 
 admin.site.site_header = 'Zento admin'
 
@@ -109,3 +109,10 @@ class OrderAdmin(admin.ModelAdmin):
 class FollowAdmin(admin.ModelAdmin):
     list_display = ('user', 'store', 'created_at')
     list_filter = ('store',)
+
+
+@admin.register(Like)
+class LikeAdmin(admin.ModelAdmin):
+    list_display = ('user', 'product', 'created_at')
+    list_filter = ('product__store',)
+    search_fields = ('user__username', 'product__name')

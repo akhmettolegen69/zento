@@ -205,3 +205,16 @@ class Follow(models.Model):
 
     def __str__(self):
         return f'{self.user} → {self.store}'
+
+
+class Like(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='likes')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='likes')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [models.UniqueConstraint(fields=['user', 'product'], name='unique_like')]
+
+    def __str__(self):
+        return f'{self.user} ♥ {self.product}'

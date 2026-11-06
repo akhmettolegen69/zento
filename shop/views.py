@@ -7,7 +7,8 @@ from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Count, OuterRef, Q, Subquery
+from django.db.models import Count, IntegerField, OuterRef, Q, Subquery
+from django.db.models.functions import Coalesce
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -16,7 +17,7 @@ from django.views.decorators.http import require_POST
 
 from .accounts import AccountForm, LoginForm, RegisterForm
 from .cart import Cart
-from .models import Category, Follow, Order, OrderItem, Product, SiteSettings, Store, Story, kzt_to_cny
+from .models import Category, Follow, Like, Order, OrderItem, Product, SiteSettings, Store, Story, kzt_to_cny
 from .payments import get_provider
 
 
@@ -33,7 +34,10 @@ def _is_fragment(request, target):
 
 
 def _product_qs():
-    return Product.objects.select_related('store', 'category').prefetch_related('photos')
+    likes = (Like.objects.filter(product=OuterRef('pk')).order_by().values('product')
+             .annotate(c=Count('pk')).values('c'))
+    return (Product.objects.select_related('store', 'category').prefetch_related('photos')
+            .annotate(like_count=Coalesce(Subquery(likes, output_field=IntegerField()), 0)))
 
 
 def _filtered_products(request):
@@ -294,15 +298,20 @@ def account(request):
     return render(request, 'shop/account.html', {'form': form})
 
 
+def _login_redirect(request, fallback):
+    """htmx can't follow a 302 into a swap target, so send HX-Redirect instead."""
+    here = urlparse(request.headers.get('HX-Current-URL', '')).path or fallback
+    url = f"{reverse('login')}?next={quote(here)}"
+    if request.headers.get('HX-Request'):
+        return HttpResponse(status=204, headers={'HX-Redirect': url})
+    return redirect(url)
+
+
 @require_POST
 def follow_toggle(request, slug):
     store = get_object_or_404(Store, slug=slug, active=True)
     if not request.user.is_authenticated:
-        here = urlparse(request.headers.get('HX-Current-URL', '')).path or reverse('store', args=[slug])
-        url = f"{reverse('login')}?next={quote(here)}"
-        if request.headers.get('HX-Request'):
-            return HttpResponse(status=204, headers={'HX-Redirect': url})
-        return redirect(url)
+        return _login_redirect(request, reverse('store', args=[slug]))
     deleted, _ = Follow.objects.filter(user=request.user, store=store).delete()
     if not deleted:
         Follow.objects.get_or_create(user=request.user, store=store)
@@ -311,3 +320,27 @@ def follow_toggle(request, slug):
             'store': store, 'cls': request.POST.get('cls', 'btn-follow'),
             'followed_ids': {store.pk} if not deleted else set()})
     return redirect(request.META.get('HTTP_REFERER') or reverse('store', args=[slug]))
+
+
+@require_POST
+def like_toggle(request, pk):
+    product = get_object_or_404(Product, pk=pk, store__active=True)
+    if not request.user.is_authenticated:
+        return _login_redirect(request, reverse('product', args=[pk]))
+    deleted, _ = Like.objects.filter(user=request.user, product=product).delete()
+    if not deleted:
+        Like.objects.get_or_create(user=request.user, product=product)
+    if request.headers.get('HX-Request'):
+        return render(request, 'shop/_like.html', {
+            'p': product, 'cls': request.POST.get('cls', 'act'),
+            'count': product.likes.count(), 'liked_ids': set() if deleted else {product.pk}})
+    return redirect(request.META.get('HTTP_REFERER') or reverse('product', args=[pk]))
+
+
+@login_required
+def liked_products(request):
+    qs = _product_qs().filter(store__active=True, likes__user=request.user).order_by('-likes__created_at')
+    ctx = {'page': _page(request, qs, GRID_PAGE)}
+    if _is_fragment(request, 'grid-more'):
+        return render(request, 'shop/_grid.html', ctx)
+    return render(request, 'shop/liked.html', ctx)

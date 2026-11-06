@@ -1,0 +1,12 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block title %}{% t 'Liked products' %} · Zento{% endblock %}
+{% block content %}
+<section class="page">
+  <h1>{% t 'Liked products' %}</h1>
+  <div class="tiles">
+    {% include 'shop/_grid.html' %}
+    {% if not page.object_list %}<div class="empty span-all">{% include 'shop/_icon.html' with i='heart' size=48 stroke='1.2' %}<h2>{% t 'No liked products yet' %}</h2></div>{% endif %}
+  </div>
+</section>
+{% endblock %}

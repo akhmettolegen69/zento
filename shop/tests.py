@@ -6,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .models import Follow, Order, Product, ProductImage, SiteSettings, Store, Story, kzt_to_cny
+from .models import Follow, Like, Order, Product, ProductImage, SiteSettings, Store, Story, kzt_to_cny
 
 GIF = (b'GIF87a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;')
 
@@ -237,3 +237,55 @@ class FollowTests(TestCase):
         Follow.objects.create(user=self.u, store=self.a)
         r = self.client.get(reverse('store', args=['a']))
         self.assertEqual(r.context['follower_count'], 1)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class LikeTests(TestCase):
+    def setUp(self):
+        SiteSettings.objects.update_or_create(pk=1, defaults={'kzt_to_cny': Decimal('0.0145')})
+        img = lambda: SimpleUploadedFile('a.gif', GIF, content_type='image/gif')
+        self.store = Store.objects.create(name='A', slug='a')
+        self.p = Product.objects.create(store=self.store, name='Lamp', image=img(), price_kzt=100, pinned=True)
+        self.q = Product.objects.create(store=self.store, name='Mug', image=img(), price_kzt=50, pinned=True)
+        self.u = User.objects.create_user('bob', password='pw12345678')
+        self.u2 = User.objects.create_user('amy', password='pw12345678')
+
+    def like(self, pk, **kw):
+        return self.client.post(reverse('like', args=[pk]), HTTP_HX_REQUEST='true', **kw)
+
+    def test_toggle_and_count(self):
+        self.client.force_login(self.u)
+        r = self.like(self.p.pk)
+        self.assertContains(r, 'like-n')
+        self.assertEqual(Like.objects.count(), 1)
+        self.like(self.p.pk)
+        self.assertEqual(Like.objects.count(), 0)
+
+    def test_anonymous_redirected_to_login(self):
+        r = self.like(self.p.pk, HTTP_HX_CURRENT_URL='http://testserver/')
+        self.assertEqual(r.status_code, 204)
+        self.assertIn('/login/?next=', r['HX-Redirect'])
+        self.assertEqual(Like.objects.count(), 0)
+
+    def test_count_is_total_across_users(self):
+        Like.objects.create(user=self.u2, product=self.p)
+        self.client.force_login(self.u)
+        self.like(self.p.pk)
+        r = self.client.get(reverse('home'))
+        counts = {x.pk: x.like_count for x in r.context['page']}
+        self.assertEqual(counts[self.p.pk], 2)
+        self.assertEqual(counts[self.q.pk], 0)
+
+    def test_liked_page_lists_only_own_likes(self):
+        Like.objects.create(user=self.u, product=self.p)
+        Like.objects.create(user=self.u2, product=self.q)
+        self.client.force_login(self.u)
+        names = [x.name for x in self.client.get(reverse('liked')).context['page']]
+        self.assertEqual(names, ['Lamp'])
+
+    def test_liked_page_requires_login_and_like_requires_post(self):
+        self.assertEqual(self.client.get(reverse('liked')).status_code, 302)
+        self.assertEqual(self.client.get(reverse('like', args=[self.p.pk])).status_code, 405)
+
+    def test_product_page_renders(self):
+        self.assertEqual(self.client.get(reverse('product', args=[self.p.pk])).status_code, 200)
