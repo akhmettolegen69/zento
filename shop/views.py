@@ -2,8 +2,7 @@ from decimal import Decimal, InvalidOperation
 from urllib.parse import quote, urlparse
 
 from django.conf import settings
-from django.contrib import messages
-from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -15,7 +14,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from .accounts import AccountForm, LoginForm, RegisterForm
+from .accounts import LoginForm, RegisterForm
 from .cart import Cart
 from .models import Category, Follow, Like, Order, OrderItem, Product, SiteSettings, Store, Story, kzt_to_cny
 from .payments import get_provider
@@ -202,8 +201,12 @@ def checkout(request):
     if not ctx['rows']:
         return redirect('cart')
     u = request.user
-    if request.method != 'POST' and u.is_authenticated and hasattr(u, 'profile'):
-        ctx['form'] = {'name': u.get_full_name(), 'phone': u.profile.phone}
+    if u.is_authenticated:
+        addresses = list(u.addresses.all())
+        ctx['addresses'] = addresses
+        if request.method != 'POST':
+            ctx['form'] = {'name': u.get_full_name(), 'phone': getattr(getattr(u, 'profile', None), 'phone', ''),
+                           'address': addresses[0].full if addresses else ''}
     if request.method == 'POST':
         name, phone, address = (request.POST.get(k, '').strip() for k in ('name', 'phone', 'address'))
         if not (name and phone and address):
@@ -212,6 +215,7 @@ def checkout(request):
         rate = SiteSettings.load().kzt_to_cny
         with transaction.atomic():
             order = Order.objects.create(
+                user=u if u.is_authenticated else None,
                 name=name, phone=phone, address=address, rate=rate,
                 total_kzt=ctx['total_kzt'], total_cny=kzt_to_cny(ctx['total_kzt'], rate))
             OrderItem.objects.bulk_create(
@@ -285,17 +289,6 @@ def register(request):
 def logout_view(request):
     logout(request)
     return redirect('home')
-
-
-@login_required
-def account(request):
-    form = AccountForm(request.POST or None, user=request.user)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        update_session_auth_hash(request, request.user)
-        messages.success(request, 'Saved.')
-        return redirect('account')
-    return render(request, 'shop/account.html', {'form': form})
 
 
 def _login_redirect(request, fallback):

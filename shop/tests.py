@@ -6,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .models import Follow, Like, Order, Product, ProductImage, SiteSettings, Store, Story, kzt_to_cny
+from .models import Follow, Like, Order, OrderItem, Product, ProductImage, SiteSettings, Store, Story, kzt_to_cny
 
 GIF = (b'GIF87a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;')
 
@@ -172,16 +172,16 @@ class AuthTests(TestCase):
 
     def test_account_update_and_password_change(self):
         self.reg()
-        r = self.client.post(reverse('account'), {'first_name': 'Aidana', 'last_name': 'N',
+        r = self.client.post(reverse('account_edit'), {'first_name': 'Aidana', 'last_name': 'N',
                                                   'current_password': 'wrong', 'new_password': 'newpass123'})
         self.assertEqual(r.status_code, 200)
-        r = self.client.post(reverse('account'), {'first_name': 'Aidana', 'last_name': 'N',
+        r = self.client.post(reverse('account_edit'), {'first_name': 'Aidana', 'last_name': 'N',
                                                   'current_password': 'secret123', 'new_password': 'newpass123'})
-        self.assertRedirects(r, reverse('account'))
+        self.assertRedirects(r, reverse('account_edit'))
         u = User.objects.get()
         self.assertEqual(u.first_name, 'Aidana')
         self.assertTrue(u.check_password('newpass123'))
-        self.assertEqual(self.client.get(reverse('account')).status_code, 200)  # still logged in
+        self.assertEqual(self.client.get(reverse('account_edit')).status_code, 200)  # still logged in
 
     def test_logout_requires_post(self):
         self.assertEqual(self.client.get(reverse('logout')).status_code, 405)
@@ -289,3 +289,115 @@ class LikeTests(TestCase):
 
     def test_product_page_renders(self):
         self.assertEqual(self.client.get(reverse('product', args=[self.p.pk])).status_code, 200)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class AccountAreaTests(TestCase):
+    def setUp(self):
+        SiteSettings.objects.update_or_create(pk=1, defaults={'kzt_to_cny': Decimal('0.0145'),
+                                                              'support_url': 'https://wa.me/77001234567'})
+        img = lambda: SimpleUploadedFile('a.gif', GIF, content_type='image/gif')
+        self.store = Store.objects.create(name='A', slug='a')
+        self.p = Product.objects.create(store=self.store, name='Lamp', image=img(), price_kzt=100, pinned=True)
+        self.u = User.objects.create_user('bob', password='pw12345678', first_name='Bob', last_name='Lee')
+        self.u2 = User.objects.create_user('amy', password='pw12345678')
+        from .models import Profile
+        Profile.objects.create(user=self.u, phone='+77010000001', company='Panda', city='Almaty')
+        Profile.objects.create(user=self.u2, phone='+77010000002')
+
+    def order(self, user, status=Order.PENDING, **kw):
+        o = Order.objects.create(user=user, name='n', phone='1', address='x', status=status,
+                                 total_kzt=200, total_cny=2, rate=Decimal('0.01'), **kw)
+        OrderItem.objects.create(order=o, product=self.p, name='Lamp', price_kzt=100, quantity=2)
+        return o
+
+    def test_dashboard_counts_and_header(self):
+        self.order(self.u); self.order(self.u); self.order(self.u, Order.IN_TRANSIT)
+        self.order(self.u, Order.READY); self.order(self.u2, Order.READY)
+        self.client.force_login(self.u)
+        r = self.client.get(reverse('account'))
+        self.assertEqual(dict(r.context['counts']), {'pending': 2, 'in_transit': 1, 'ready': 1})
+        self.assertEqual(r.context['initials'], 'BL')
+        self.assertContains(r, 'Panda')
+        self.assertContains(r, 'wa.me/77001234567')
+        self.assertEqual(r.context['latest'].pcs, 2)
+        self.assertEqual(r.context['latest'].status, Order.READY)  # newest order, not oldest
+
+    def test_dashboard_requires_login_and_works_without_profile(self):
+        self.assertEqual(self.client.get(reverse('account')).status_code, 302)
+        admin = User.objects.create_superuser('root', password='pw12345678')
+        self.client.force_login(admin)
+        self.assertEqual(self.client.get(reverse('account')).status_code, 200)
+        self.assertEqual(self.client.get(reverse('account_edit')).status_code, 200)
+
+    def test_orders_filter_and_isolation(self):
+        a = self.order(self.u); self.order(self.u, Order.PAID); other = self.order(self.u2)
+        self.client.force_login(self.u)
+        self.assertEqual(len(self.client.get(reverse('orders')).context['page']), 2)
+        r = self.client.get(reverse('orders') + '?status=pending')
+        self.assertEqual([o.pk for o in r.context['page']], [a.pk])
+        self.assertEqual(self.client.get(reverse('order_detail', args=[a.pk])).status_code, 200)
+        self.assertEqual(self.client.get(reverse('order_detail', args=[other.pk])).status_code, 404)
+
+    def test_receipt_only_for_paid_own_orders(self):
+        pend = self.order(self.u); paid = self.order(self.u, Order.PAID); other = self.order(self.u2, Order.PAID)
+        self.client.force_login(self.u)
+        self.assertEqual(self.client.get(reverse('receipt', args=[paid.pk])).status_code, 200)
+        self.assertEqual(self.client.get(reverse('receipt', args=[pend.pk])).status_code, 404)
+        self.assertEqual(self.client.get(reverse('receipt', args=[other.pk])).status_code, 404)
+        self.assertEqual([o.pk for o in self.client.get(reverse('payments')).context['page']], [paid.pk])
+
+    def test_pay_pending_order(self):
+        o = self.order(self.u)
+        self.client.force_login(self.u)
+        r = self.client.post(reverse('order_pay', args=[o.pk]))
+        self.assertRedirects(r, reverse('mock_pay', args=[o.pk]), fetch_redirect_response=False)
+        self.assertEqual(self.client.get(reverse('order_pay', args=[o.pk])).status_code, 405)
+
+    def test_checkout_links_order_to_user_and_prefills(self):
+        from .models import Address
+        Address.objects.create(user=self.u, label='Home', city='Almaty', address='Abay 1', is_default=True)
+        self.client.force_login(self.u)
+        self.client.post(reverse('cart_action', args=['add', self.p.pk]))
+        r = self.client.get(reverse('checkout'))
+        self.assertEqual(r.context['form']['address'], 'Almaty, Abay 1')
+        self.client.post(reverse('checkout'), {'name': 'Bob', 'phone': '1', 'address': 'x'})
+        self.assertEqual(Order.objects.get().user, self.u)
+
+    def test_edit_profile_saves_company_city(self):
+        self.client.force_login(self.u)
+        self.client.post(reverse('account_edit'), {'first_name': 'Bob', 'last_name': 'Lee',
+                                                   'company': 'New', 'city': 'Astana'})
+        self.u.profile.refresh_from_db()
+        self.assertEqual((self.u.profile.company, self.u.profile.city), ('New', 'Astana'))
+
+    def test_register_stores_company_city(self):
+        self.client.post(reverse('register'), {
+            'first_name': 'A', 'last_name': 'B', 'username': 'zed', 'phone': '87019998877',
+            'company': 'Co', 'city': 'Oral', 'password': 'secret123', 'password2': 'secret123'})
+        self.assertEqual(User.objects.get(username='zed').profile.city, 'Oral')
+
+    def test_addresses_crud_default_and_isolation(self):
+        from .models import Address
+        self.client.force_login(self.u)
+        for label in ('Home', 'Office'):
+            self.client.post(reverse('address_new'), {'label': label, 'city': 'Almaty', 'address': 'x'})
+        a1, a2 = Address.objects.order_by('id')
+        self.assertTrue(a1.is_default and not a2.is_default)  # first one becomes default
+        self.client.post(reverse('address_edit', args=[a2.pk]),
+                         {'label': 'Office', 'city': 'Almaty', 'address': 'y', 'is_default': 'on'})
+        a1.refresh_from_db(); a2.refresh_from_db()
+        self.assertTrue(a2.is_default and not a1.is_default)
+        self.client.post(reverse('address_delete', args=[a2.pk]))  # deleting default promotes another
+        a1.refresh_from_db()
+        self.assertTrue(a1.is_default)
+        foreign = Address.objects.create(user=self.u2, label='x', city='c', address='a')
+        self.assertEqual(self.client.post(reverse('address_delete', args=[foreign.pk])).status_code, 404)
+        self.assertEqual(self.client.get(reverse('address_edit', args=[foreign.pk])).status_code, 404)
+
+    def test_following_and_other_pages_render(self):
+        Follow.objects.create(user=self.u, store=self.store)
+        self.client.force_login(self.u)
+        self.assertEqual(list(self.client.get(reverse('following')).context['stores']), [self.store])
+        for name in ('account_settings', 'addresses', 'address_new', 'liked'):
+            self.assertEqual(self.client.get(reverse(name)).status_code, 200, name)

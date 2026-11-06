@@ -10,6 +10,8 @@
     {% include 'shop/_field.html' with f=form.last_name label='Last name' ac='family-name' %}
     {% include 'shop/_field.html' with f=form.username label='Username' ac='username' %}
     {% include 'shop/_field.html' with f=form.phone label='Phone (+7)' type='tel' ac='tel' inputmode='tel' %}
+    {% include 'shop/_field.html' with f=form.company label='Company / shop' ac='organization' optional=1 %}
+    {% include 'shop/_field.html' with f=form.city label='City' ac='address-level2' optional=1 %}
     {% include 'shop/_field.html' with f=form.password label='Password' type='password' ac='new-password' %}
     {% include 'shop/_field.html' with f=form.password2 label='Repeat password' type='password' ac='new-password' %}
     <button class="btn">{% t 'Create account' %}</button>

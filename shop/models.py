@@ -10,6 +10,8 @@ class SiteSettings(models.Model):
     kzt_to_cny = models.DecimalField(
         'KZT → CNY rate', max_digits=12, decimal_places=6, default=Decimal('0.0145'),
         help_text='How many CNY one KZT is worth, e.g. 0.0145')
+    support_url = models.URLField(
+        'Support chat link', blank=True, help_text='WhatsApp / Telegram link, e.g. https://wa.me/77001234567')
 
     class Meta:
         verbose_name = 'Site settings'
@@ -154,8 +156,16 @@ class StorySlide(models.Model):
 
 
 class Order(models.Model):
-    PENDING, PAID, FAILED = 'pending', 'paid', 'failed'
-    STATUSES = [(PENDING, 'Pending'), (PAID, 'Paid'), (FAILED, 'Failed')]
+    PENDING, PAID, IN_TRANSIT, READY, DELIVERED, FAILED = (
+        'pending', 'paid', 'in_transit', 'ready', 'delivered', 'failed')
+    STATUSES = [(PENDING, 'Awaiting payment'), (PAID, 'Paid'), (IN_TRANSIT, 'In transit'),
+                (READY, 'Ready for pickup'), (DELIVERED, 'Delivered'), (FAILED, 'Failed')]
+    PAID_STATUSES = (PAID, IN_TRANSIT, READY, DELIVERED)
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                             related_name='orders')
+    est_delivery_from = models.DateField(null=True, blank=True)
+    est_delivery_to = models.DateField(null=True, blank=True)
 
     name = models.CharField(max_length=120)
     phone = models.CharField(max_length=32)
@@ -172,6 +182,14 @@ class Order(models.Model):
 
     def __str__(self):
         return f'Order #{self.pk}'
+
+    @property
+    def thumb(self):
+        """First product image; prefetch `items__product` to avoid N+1."""
+        for it in self.items.all():
+            if it.product_id and it.product.image:
+                return it.product.image
+        return None
 
 
 class OrderItem(models.Model):
@@ -190,6 +208,8 @@ class Profile(models.Model):
     """Phone number for a Django user. `phone` is normalized to +7XXXXXXXXXX."""
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     phone = models.CharField(max_length=12, unique=True)
+    company = models.CharField(max_length=80, blank=True)
+    city = models.CharField(max_length=60, blank=True)
 
     def __str__(self):
         return self.phone
@@ -218,3 +238,22 @@ class Like(models.Model):
 
     def __str__(self):
         return f'{self.user} ♥ {self.product}'
+
+
+class Address(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='addresses')
+    label = models.CharField(max_length=40, help_text='e.g. Home, Office')
+    city = models.CharField(max_length=60)
+    address = models.TextField()
+    is_default = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-is_default', 'id']
+        verbose_name_plural = 'addresses'
+
+    def __str__(self):
+        return f'{self.label}: {self.city}, {self.address}'
+
+    @property
+    def full(self):
+        return f'{self.city}, {self.address}'

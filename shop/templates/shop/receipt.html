@@ -1,0 +1,13 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block title %}{% t 'Receipt' %} #{{ order.pk }} · Zento{% endblock %}
+{% block content %}
+<section class="page narrow receipt">
+  {% url 'order_detail' order.pk as back %}{% include 'shop/_back.html' with to=back label='Order' %}
+  <h1>{% t 'Receipt' %} #{{ order.pk }}</h1>
+  <p class="muted">{{ order.created_at|date:'d.m.Y H:i' }}{% if order.payment_ref %} · {{ order.payment_ref }}{% endif %}<br>{{ order.name }} · {{ order.phone }}</p>
+  {% for it in order.items.all %}<div class="sum-row"><span>{{ it.name }} × {{ it.quantity }}</span><span>{{ it.subtotal_kzt|kzt }}</span></div>{% endfor %}
+  <div class="cart-total"><span>{% t 'Total' %}</span><b>{{ order.total_kzt|kzt }}<br><span class="cny">{{ order.total_cny|cny }}</span></b></div>
+  <button class="btn btn-gray" onclick="window.print()">{% t 'Print' %}</button>
+</section>
+{% endblock %}

@@ -1,23 +1,39 @@
 {% extends 'shop/base.html' %}
 {% load zento %}
-{% block title %}{% t 'Account' %} · Zento{% endblock %}
+{% block title %}{% t 'My profile' %} · Zento{% endblock %}
 {% block content %}
-<section class="page narrow">
-  <form method="post" class="form">{% csrf_token %}
-    <h1>{% t 'Account' %}</h1>
-    {% for m in messages %}<p>{% t m.message %}</p>{% endfor %}
-    <p><b>@{{ user.username }}</b> · {{ user.profile.phone }}</p>
-    {% include 'shop/_field.html' with f=form.first_name label='First name' ac='given-name' %}
-    {% include 'shop/_field.html' with f=form.last_name label='Last name' ac='family-name' %}
-    <h3>{% t 'Change password' %}</h3>
-    <small>{% t 'Leave blank to keep the current password.' %}</small>
-    {% include 'shop/_field.html' with f=form.current_password label='Current password' type='password' ac='current-password' optional=1 %}
-    {% include 'shop/_field.html' with f=form.new_password label='New password' type='password' ac='new-password' optional=1 %}
-    <button class="btn">{% t 'Save' %}</button>
-  </form>
-  <p><a class="link-accent" href="{% url 'liked' %}">{% t 'Liked products' %}</a></p>
-  <form method="post" action="{% url 'logout' %}" class="form">{% csrf_token %}
-    <button class="btn btn-gray">{% t 'Log out' %}</button>
+<section class="page acc">
+  <h1>{% t 'My profile' %}</h1>
+  <div class="acc-head">
+    <span class="acc-av">{{ initials }}</span>
+    <div>
+      <div class="acc-name">{{ user.get_full_name|default:user.username }}</div>
+      {% if profile.company or profile.city %}<div class="acc-sub">{{ profile.company }}{% if profile.company and profile.city %} · {% endif %}{{ profile.city }}</div>{% endif %}
+      <a class="link-accent" href="{% url 'account_edit' %}">{% t 'Edit profile' %}</a>
+    </div>
+  </div>
+
+  <div class="tiles-row">
+    <a class="stat-tile" href="{% url 'orders' %}?status=pending"><span class="st-ic st-orange">{% include 'shop/_icon.html' with i='wallet' size=30 %}</span><b>{{ counts.pending }}</b><span>{% t 'Awaiting payment' %}</span></a>
+    <a class="stat-tile" href="{% url 'orders' %}?status=in_transit"><span class="st-ic st-blue">{% include 'shop/_icon.html' with i='truck' size=30 %}</span><b>{{ counts.in_transit }}</b><span>{% t 'In transit' %}</span></a>
+    <a class="stat-tile" href="{% url 'orders' %}?status=ready"><span class="st-ic st-green">{% include 'shop/_icon.html' with i='box' size=30 %}</span><b>{{ counts.ready }}</b><span>{% t 'Ready for pickup' %}</span></a>
+  </div>
+
+  <div class="sec-head"><h2>{% t 'My orders' %}</h2><a class="link-accent" href="{% url 'orders' %}">{% t 'View all' %} →</a></div>
+  {% if latest %}{% include 'shop/_order_card.html' with o=latest %}
+  {% else %}<p class="muted">{% t 'No orders yet' %}</p>{% endif %}
+
+  <nav class="menu-list">
+    <a href="{% url 'orders' %}">{% include 'shop/_icon.html' with i='history' %}<span>{% t 'Purchase history' %}</span>{% include 'shop/_icon.html' with i='chev' size=20 %}</a>
+    <a href="{% url 'liked' %}">{% include 'shop/_icon.html' with i='heart' %}<span>{% t 'Favorite items' %}</span>{% include 'shop/_icon.html' with i='chev' size=20 %}</a>
+    <a href="{% url 'following' %}">{% include 'shop/_icon.html' with i='store' %}<span>{% t 'Followed stores' %}</span>{% include 'shop/_icon.html' with i='chev' size=20 %}</a>
+    <a href="{% url 'addresses' %}">{% include 'shop/_icon.html' with i='pin' %}<span>{% t 'My delivery addresses' %}</span>{% include 'shop/_icon.html' with i='chev' size=20 %}</a>
+    <a href="{% url 'payments' %}">{% include 'shop/_icon.html' with i='wallet' %}<span>{% t 'Payments & receipts' %}</span>{% include 'shop/_icon.html' with i='chev' size=20 %}</a>
+    {% if support_url %}<a href="{{ support_url }}" target="_blank" rel="noopener">{% include 'shop/_icon.html' with i='headset' %}<span>{% t 'Support service' %}</span><em>{% t 'Contact an operator' %}</em>{% include 'shop/_icon.html' with i='chev' size=20 %}</a>{% endif %}
+    <a href="{% url 'account_settings' %}">{% include 'shop/_icon.html' with i='gear' %}<span>{% t 'Settings' %}</span><em>{% if lang == 'ru' %}Русский{% elif lang == 'kk' %}Қазақша{% else %}English{% endif %}</em>{% include 'shop/_icon.html' with i='chev' size=20 %}</a>
+  </nav>
+  <form method="post" action="{% url 'logout' %}" class="logout-form">{% csrf_token %}
+    <button class="logout">{% include 'shop/_icon.html' with i='logout' %}<span>{% t 'Log out' %}</span></button>
   </form>
 </section>
 {% endblock %}

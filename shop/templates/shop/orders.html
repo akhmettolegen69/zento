@@ -1,0 +1,15 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block title %}{% t 'Purchase history' %} · Zento{% endblock %}
+{% block content %}
+<section class="page narrow">
+  {% url 'account' as back %}{% include 'shop/_back.html' with to=back %}
+  <h1>{% t 'Purchase history' %}</h1>
+  <nav class="chips">
+    <a href="{% url 'orders' %}" class="{% if not status %}on{% endif %}">{% t 'All' %}</a>
+    {% for key, label in statuses %}<a href="?status={{ key }}" class="{% if status == key %}on{% endif %}">{% t label %}</a>{% endfor %}
+  </nav>
+  {% for o in page %}{% include 'shop/_order_card.html' %}{% empty %}<p class="muted">{% t 'No orders yet' %}</p>{% endfor %}
+  {% include 'shop/_pager.html' %}
+</section>
+{% endblock %}

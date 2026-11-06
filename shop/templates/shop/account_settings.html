@@ -1,0 +1,18 @@
+{% extends 'shop/base.html' %}
+{% load zento %}
+{% block title %}{% t 'Settings' %} · Zento{% endblock %}
+{% block content %}
+<section class="page narrow">
+  {% url 'account' as back %}{% include 'shop/_back.html' with to=back %}
+  <h1>{% t 'Settings' %}</h1>
+  <h3>{% t 'Language' %}</h3>
+  <nav class="menu-list">
+    <a href="{% url 'set_language' 'ru' %}"><span>Русский</span>{% if lang == 'ru' %}<b class="link-accent">✓</b>{% endif %}</a>
+    <a href="{% url 'set_language' 'kk' %}"><span>Қазақша</span>{% if lang == 'kk' %}<b class="link-accent">✓</b>{% endif %}</a>
+    <a href="{% url 'set_language' 'en' %}"><span>English</span>{% if lang == 'en' %}<b class="link-accent">✓</b>{% endif %}</a>
+  </nav>
+  <nav class="menu-list">
+    <a href="{% url 'account_edit' %}"><span>{% t 'Edit profile' %}</span>{% include 'shop/_icon.html' with i='chev' size=20 %}</a>
+  </nav>
+</section>
+{% endblock %}
