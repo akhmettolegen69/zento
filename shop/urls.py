@@ -14,6 +14,7 @@ urlpatterns = [
     path('account/settings/', acc.account_settings, name='account_settings'),
     path('account/orders/', acc.orders, name='orders'),
     path('account/orders/<int:pk>/', acc.order_detail, name='order_detail'),
+    path('account/orders/<int:pk>/reorder/', acc.order_reorder, name='order_reorder'),
     path('account/orders/<int:pk>/pay/', acc.order_pay, name='order_pay'),
     path('account/orders/<int:pk>/receipt/', acc.receipt, name='receipt'),
     path('account/payments/', acc.payments, name='payments'),

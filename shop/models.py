@@ -156,11 +156,17 @@ class StorySlide(models.Model):
 
 
 class Order(models.Model):
-    PENDING, PAID, IN_TRANSIT, READY, DELIVERED, FAILED = (
-        'pending', 'paid', 'in_transit', 'ready', 'delivered', 'failed')
-    STATUSES = [(PENDING, 'Awaiting payment'), (PAID, 'Paid'), (IN_TRANSIT, 'In transit'),
-                (READY, 'Ready for pickup'), (DELIVERED, 'Delivered'), (FAILED, 'Failed')]
-    PAID_STATUSES = (PAID, IN_TRANSIT, READY, DELIVERED)
+    PENDING, PAID, PURCHASED, CHINA_WH, IN_TRANSIT, LOCAL_WH, READY, DELIVERED, FAILED = (
+        'pending', 'paid', 'purchased', 'china_warehouse', 'in_transit', 'local_warehouse',
+        'ready', 'delivered', 'failed')
+    # Tracking pipeline, in order. `paid` is shown to customers as "Order Confirmed".
+    TRACK_STEPS = [(PAID, 'Order Confirmed'), (PURCHASED, 'Purchased from Supplier'),
+                   (CHINA_WH, 'Arrived at China Warehouse'), (IN_TRANSIT, 'On the Way'),
+                   (LOCAL_WH, 'Arrived at Local Warehouse'), (READY, 'Ready for Pickup'),
+                   (DELIVERED, 'Delivered to Customer')]
+    STATUSES = [(PENDING, 'Awaiting payment')] + TRACK_STEPS + [(FAILED, 'Failed')]
+    PAID_STATUSES = tuple(k for k, _ in TRACK_STEPS)
+    DONE_STATUSES = (DELIVERED, FAILED)
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
                              related_name='orders')
@@ -170,7 +176,7 @@ class Order(models.Model):
     name = models.CharField(max_length=120)
     phone = models.CharField(max_length=32)
     address = models.TextField()
-    status = models.CharField(max_length=10, choices=STATUSES, default=PENDING)
+    status = models.CharField(max_length=20, choices=STATUSES, default=PENDING)
     total_kzt = models.DecimalField(max_digits=14, decimal_places=0)
     total_cny = models.DecimalField(max_digits=14, decimal_places=2)
     rate = models.DecimalField(max_digits=12, decimal_places=6)
@@ -183,6 +189,35 @@ class Order(models.Model):
     def __str__(self):
         return f'Order #{self.pk}'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._orig_status = None if self._state.adding else self.status
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.status != self._orig_status:  # new order or status changed -> log it for the tracker
+            OrderEvent.objects.create(order=self, status=self.status)
+            self._orig_status = self.status
+
+    @property
+    def is_active(self):
+        return self.status not in self.DONE_STATUSES
+
+    @property
+    def timeline(self):
+        """Tracking steps with state done/current/todo and the date each was reached."""
+        reached = {}
+        for e in self.events.all():  # ordered oldest first; last one wins if a status was repeated
+            reached[e.status] = e.created_at
+        idx = next((i for i, (k, _) in enumerate(self.TRACK_STEPS) if k == self.status), -1)
+        rows = []
+        for i, (key, label) in enumerate(self.TRACK_STEPS):
+            state = 'todo' if idx < 0 or i > idx else 'current' if i == idx else 'done'
+            if state == 'current' and key == self.DELIVERED:
+                state = 'done'
+            rows.append({'key': key, 'label': label, 'state': state, 'date': reached.get(key) if state != 'todo' else None})
+        return rows
+
     @property
     def thumb(self):
         """First product image; prefetch `items__product` to avoid N+1."""
@@ -190,6 +225,19 @@ class Order(models.Model):
             if it.product_id and it.product.image:
                 return it.product.image
         return None
+
+
+class OrderEvent(models.Model):
+    """When an order reached a status; shown as dates in the customer's tracking timeline."""
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='events')
+    status = models.CharField(max_length=20, choices=Order.STATUSES)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['created_at', 'pk']
+
+    def __str__(self):
+        return f'{self.order} → {self.status}'
 
 
 class OrderItem(models.Model):

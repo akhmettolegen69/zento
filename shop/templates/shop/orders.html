@@ -1,15 +1,28 @@
 {% extends 'shop/base.html' %}
 {% load zento %}
-{% block title %}{% t 'Purchase history' %} · Zento{% endblock %}
+{% block title %}{% t 'My Orders' %} · Zento{% endblock %}
 {% block content %}
 <section class="page narrow">
   {% url 'account' as back %}{% include 'shop/_back.html' with to=back %}
-  <h1>{% t 'Purchase history' %}</h1>
-  <nav class="chips">
-    <a href="{% url 'orders' %}" class="{% if not status %}on{% endif %}">{% t 'All' %}</a>
-    {% for key, label in statuses %}<a href="?status={{ key }}" class="{% if status == key %}on{% endif %}">{% t label %}</a>{% endfor %}
-  </nav>
+  <h1>{% t 'My Orders' %}</h1>
+  {% if status %}
+  <nav class="chips"><a href="{% url 'orders' %}">{% t 'All' %}</a>
+    {% for key, label in statuses %}<a href="?status={{ key }}" class="{% if status == key %}on{% endif %}">{% t label %}</a>{% endfor %}</nav>
+  {% else %}
+  <nav class="segment"><a class="{% if tab == 'active' %}on{% endif %}" href="{% url 'orders' %}">{% t 'Active' %}</a><a class="{% if tab == 'completed' %}on{% endif %}" href="?tab=completed">{% t 'Completed' %}</a></nav>
+  {% endif %}
   {% for o in page %}{% include 'shop/_order_card.html' %}{% empty %}<p class="muted">{% t 'No orders yet' %}</p>{% endfor %}
   {% include 'shop/_pager.html' %}
+  {% if history %}
+  <div class="sec-head"><h2>{% t 'Purchase History' %}</h2></div>
+  {% for o in history %}
+  <div class="order-card history">
+    <a class="order-thumb" href="{% url 'order_detail' o.pk %}">{% if o.thumb %}<img src="{{ o.thumb.url }}" alt="">{% endif %}</a>
+    <a class="order-info" href="{% url 'order_detail' o.pk %}"><b>#{{ o.pk }}</b><span class="oi-name">{{ o.items.all.0.name }}</span><span class="muted">{{ o.pcs|default:0 }} {% t 'pcs' %} · {{ o.total_kzt|kzt }}</span></a>
+    <span class="hist-side"><em class="pill pill-{{ o.status }}">{% include 'shop/_status_icon.html' with s=o.status size=16 %}{% t o.get_status_display %}</em>
+      <form method="post" action="{% url 'order_reorder' o.pk %}">{% csrf_token %}<button class="btn btn-outline">{% t 'Buy Again' %}</button></form></span>
+  </div>
+  {% endfor %}
+  {% endif %}
 </section>
 {% endblock %}
