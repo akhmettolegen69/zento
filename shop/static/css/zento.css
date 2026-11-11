@@ -316,3 +316,37 @@ img{display:block}
 .store-list .uname{font-size:17px}
 .store-list .btn-follow{padding:8px 26px}
 .topbar-right .ic-wrap.heart{display:inline-flex}
+
+/* ---------- orders & tracking ---------- */
+.segment{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:18px}
+.segment a{flex:1;text-align:center;padding:12px;font-size:17px}.segment a.on{background:var(--brand);color:#fff;font-weight:700}
+.order-info .oi-name{font-weight:700;font-size:17px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px}
+.pill-paid,.pill-purchased,.pill-in_transit,.pill-local_warehouse{background:var(--brand-soft);color:var(--brand)}
+.pill-china_warehouse{background:#fde9c8;color:#a35a00}
+.pill-ready,.pill-delivered{background:#dff3e5;color:#1b8a3f}
+.track{font-size:15px}
+.order-card.history{align-items:flex-start}.order-card.history .order-info{color:inherit}
+.hist-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px}.hist-side form{margin:0}
+.btn-outline{background:#fff;color:var(--brand);border:1.5px solid var(--brand)}.btn-outline:hover{background:var(--brand-soft)}
+.back-title{display:flex;align-items:center;gap:14px;margin-bottom:16px}.back-title h1{margin:0}
+.od-head{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.order-thumb.big{width:96px;height:96px}.od-name{font-size:20px;display:block;margin-bottom:4px}
+.status-banner{border-radius:14px;padding:18px 20px;margin-bottom:22px;background:linear-gradient(135deg,#d9e7fb,#e9f1fd);color:var(--ink)}
+.sb-title{display:flex;align-items:center;gap:12px;font-size:28px;font-weight:700;color:var(--brand);margin-bottom:6px}
+.status-banner.st-ready,.status-banner.st-delivered{background:#e1f4e7}.st-ready .sb-title,.st-delivered .sb-title{color:#1b8a3f}
+.status-banner.st-pending,.status-banner.st-china_warehouse{background:#fdf0dc}.st-pending .sb-title,.st-china_warehouse .sb-title{color:#b86a00}
+.status-banner.st-failed{background:#fde3e5}.st-failed .sb-title{color:var(--red)}
+.timeline{list-style:none;margin:0 0 24px;padding:0}
+.timeline li{position:relative;display:flex;flex-direction:column;padding:0 0 22px 48px;min-height:46px;font-size:17px}
+.timeline li:last-child{padding-bottom:0}
+.timeline li:before{content:"";position:absolute;left:13px;top:28px;bottom:-2px;border-left:3px solid #1fa84a}
+.timeline li.tl-current:before,.timeline li.tl-todo:before{border-left:2px dotted #c4c4c4}
+.timeline li:last-child:before{display:none}
+.tl-dot{position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;border:3px solid #c4c4c4;background:#fff;display:flex;align-items:center;justify-content:center;color:#fff}
+.tl-done .tl-dot{background:#1fa84a;border-color:#1fa84a}
+.tl-current .tl-dot{border-color:var(--brand)}.tl-current .tl-dot:after{content:"";width:10px;height:10px;border-radius:50%;background:var(--brand)}
+.tl-current b{color:var(--brand)}.tl-todo b{font-weight:500}
+.timeline small{color:var(--muted);font-size:15px}
+.od-sub{font-size:16px;margin:8px 0 0}
+.btn.support{margin-top:20px;background:var(--brand);border-radius:10px;padding:16px;font-size:18px}

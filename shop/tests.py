@@ -401,3 +401,48 @@ class AccountAreaTests(TestCase):
         self.assertEqual(list(self.client.get(reverse('following')).context['stores']), [self.store])
         for name in ('account_settings', 'addresses', 'address_new', 'liked'):
             self.assertEqual(self.client.get(reverse(name)).status_code, 200, name)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class OrderTrackingTests(TestCase):
+    def setUp(self):
+        img = lambda: SimpleUploadedFile('a.gif', GIF, content_type='image/gif')
+        self.store = Store.objects.create(name='A', slug='a')
+        self.p = Product.objects.create(store=self.store, name='Lamp', image=img(), price_kzt=100)
+        self.u = User.objects.create_user('bob', password='pw12345678')
+        self.o = Order.objects.create(user=self.u, name='n', phone='1', address='x', status=Order.PAID,
+                                      total_kzt=200, total_cny=2, rate=Decimal('0.01'))
+        OrderItem.objects.create(order=self.o, product=self.p, name='Lamp', price_kzt=100, quantity=2)
+
+    def test_status_changes_are_logged_once(self):
+        self.assertEqual(list(self.o.events.values_list('status', flat=True)), ['paid'])
+        self.o.save()  # no change -> no new event
+        self.o.status = Order.IN_TRANSIT
+        self.o.save()
+        self.assertEqual(list(self.o.events.values_list('status', flat=True)), ['paid', 'in_transit'])
+
+    def test_timeline_states(self):
+        self.o.status = Order.IN_TRANSIT
+        self.o.save()
+        states = {s['key']: s['state'] for s in Order.objects.get(pk=self.o.pk).timeline}
+        self.assertEqual(states['paid'], 'done')
+        self.assertEqual(states['in_transit'], 'current')
+        self.assertEqual(states['ready'], 'todo')
+
+    def test_admin_action_and_detail_page(self):
+        admin = User.objects.create_superuser('root', password='pw12345678')
+        self.client.force_login(admin)
+        r = self.client.post('/admin/shop/order/', {'action': 'mark_ready', '_selected_action': [self.o.pk]})
+        self.assertEqual(r.status_code, 302)
+        self.o.refresh_from_db()
+        self.assertEqual(self.o.status, Order.READY)
+        self.assertEqual(self.client.get(f'/admin/shop/order/{self.o.pk}/change/').status_code, 200)
+        self.client.force_login(self.u)
+        self.assertContains(self.client.get(reverse('order_detail', args=[self.o.pk])), 'st-ready')
+        self.assertEqual(self.client.get(reverse('orders')).status_code, 200)
+
+    def test_reorder_fills_cart(self):
+        self.client.force_login(self.u)
+        r = self.client.post(reverse('order_reorder', args=[self.o.pk]))
+        self.assertRedirects(r, reverse('cart'))
+        self.assertEqual(self.client.session['cart'][str(self.p.pk)], 2)

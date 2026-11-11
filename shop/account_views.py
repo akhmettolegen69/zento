@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .accounts import AccountForm, AddressForm
+from .cart import Cart
 from .models import Address, Order, Store
 from .payments import get_provider
 
@@ -58,15 +59,33 @@ def orders(request):
     qs = _orders(request.user)
     if status in dict(Order.STATUSES):
         qs = qs.filter(status=status)
+        active = history = None
+    else:
+        active = qs.exclude(status__in=Order.DONE_STATUSES)
+        history = qs.filter(status__in=Order.DONE_STATUSES)
+        qs = history if request.GET.get('tab') == 'completed' else active
     page = Paginator(qs, 10).get_page(request.GET.get('page'))
     return render(request, 'shop/orders.html', {
-        'page': page, 'status': status, 'statuses': Order.STATUSES})
+        'page': page, 'status': status, 'statuses': Order.STATUSES,
+        'tab': 'completed' if request.GET.get('tab') == 'completed' else 'active',
+        'history': history[:5] if history is not None and request.GET.get('tab') != 'completed' else None})
 
 
 @login_required
 def order_detail(request, pk):
-    order = get_object_or_404(_orders(request.user), pk=pk)
-    return render(request, 'shop/order_detail.html', {'order': order})
+    order = get_object_or_404(_orders(request.user).prefetch_related('events'), pk=pk)
+    return render(request, 'shop/order_detail.html', {'order': order, 'timeline': order.timeline})
+
+
+@login_required
+@require_POST
+def order_reorder(request, pk):
+    order = get_object_or_404(request.user.orders.prefetch_related('items__product'), pk=pk)
+    cart = Cart(request)
+    for it in order.items.all():
+        if it.product_id and it.product.available:
+            cart.add(it.product_id, it.quantity)
+    return redirect('cart')
 
 
 @login_required

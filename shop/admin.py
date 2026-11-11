@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Address, Category, Follow, Like, Order, OrderItem, Product, ProductImage, Profile, SiteSettings, Store, Story, StorySlide
+from .models import Address, Category, Follow, Like, Order, OrderEvent, OrderItem, Product, ProductImage, Profile, SiteSettings, Store, Story, StorySlide
 
 admin.site.site_header = 'Zento admin'
 
@@ -97,14 +97,35 @@ class OrderItemInline(admin.TabularInline):
     can_delete = False
 
 
+class OrderEventInline(admin.TabularInline):
+    model = OrderEvent
+    extra = 0
+    verbose_name_plural = 'Tracking history (dates shown to the customer)'
+
+
+def _set_status_action(status, label):
+    @admin.action(description=f'Mark selected orders as: {label}')
+    def action(modeladmin, request, queryset):
+        n = 0
+        for order in queryset.exclude(status=status):  # save() logs the tracking event
+            order.status = status
+            order.save()
+            n += 1
+        modeladmin.message_user(request, f'{n} order(s) marked as "{label}".')
+    action.__name__ = f'mark_{status}'
+    return action
+
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'phone', 'user', 'status', 'total_kzt', 'total_cny', 'created_at')
+    list_display = ('id', 'name', 'phone', 'user', 'status', 'est_delivery_from', 'est_delivery_to', 'total_kzt', 'created_at')
     list_filter = ('status',)
-    list_editable = ('status',)
+    list_editable = ('status', 'est_delivery_from', 'est_delivery_to')
+    search_fields = ('id', 'name', 'phone', 'user__username')
     raw_id_fields = ('user',)
     readonly_fields = ('total_kzt', 'total_cny', 'rate', 'payment_ref', 'created_at')
-    inlines = [OrderItemInline]
+    inlines = [OrderItemInline, OrderEventInline]
+    actions = [_set_status_action(k, v) for k, v in Order.STATUSES]
 
 
 @admin.register(Follow)

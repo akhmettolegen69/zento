@@ -3,10 +3,30 @@
 {% block title %}{% t 'Order' %} #{{ order.pk }} · Zento{% endblock %}
 {% block content %}
 <section class="page narrow">
-  {% url 'orders' as back %}{% include 'shop/_back.html' with to=back label='Purchase history' %}
-  <h1>{% t 'Order' %} #{{ order.pk }}</h1>
-  <p><em class="pill pill-{{ order.status }}">{% t order.get_status_display %}</em>
-    {% if order.est_delivery_from and order.est_delivery_to and order.status != 'delivered' and order.status != 'failed' %}<small class="muted"> {% t 'Estimated delivery' %}: {{ order.est_delivery_from|date:'M j' }}–{{ order.est_delivery_to|date:'j' }}</small>{% endif %}</p>
+  {% url 'orders' as back %}<a class="back-title" href="{{ back }}" aria-label="{% t 'My Orders' %}">{% include 'shop/_icon.html' with i='back' size=26 %}<h1>{% t 'Order' %} #{{ order.pk }}</h1></a>
+  <div class="od-head">
+    <span class="order-thumb big">{% if order.thumb %}<img src="{{ order.thumb.url }}" alt="">{% else %}{% include 'shop/_icon.html' with i='bag' size=36 %}{% endif %}</span>
+    <div><b class="od-name">{% for it in order.items.all|slice:":1" %}{{ it.name }}{% endfor %}{% if order.items.all|length > 1 %} +{{ order.items.all|length|add:"-1" }}{% endif %}</b>
+      <div class="muted">{{ order.items.all|length }} {% t 'items' %} · {{ order.total_kzt|kzt }} <span class="cny">{{ order.total_cny|cny }}</span></div></div>
+  </div>
+
+  <div class="status-banner st-{{ order.status }}">
+    <div class="sb-title">{% include 'shop/_status_icon.html' with s=order.status size=34 %}<span>{% t order.get_status_display %}</span></div>
+    {% if order.est_delivery_from and order.est_delivery_to and order.is_active %}<div>{% t 'Estimated delivery' %}: {{ order.est_delivery_from|date:'M j' }} – {{ order.est_delivery_to|date:'M j' }}</div>
+    {% elif order.status == 'pending' %}<div>{% t 'Pay to start processing your order' %}</div>
+    {% elif order.status == 'failed' %}<div>{% t 'Payment was not completed' %}</div>{% endif %}
+  </div>
+
+  {% if order.status != 'pending' and order.status != 'failed' %}
+  <ol class="timeline">
+    {% for s in timeline %}
+    <li class="tl-{{ s.state }}"><i class="tl-dot">{% if s.state == 'done' %}{% include 'shop/_icon.html' with i='tick' size=14 stroke='3' %}{% endif %}</i>
+      <b>{% t s.label %}</b>{% if s.date %}<small>{{ s.date|date:'M j' }}</small>{% endif %}</li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+
+  <h3 class="od-sub">{% t 'Items' %}</h3>
   {% for it in order.items.all %}
   <div class="cart-row">
     <span class="thumb" {% if it.product and it.product.image %}style="background-image:url('{{ it.product.image.url }}')"{% endif %}></span>
@@ -17,7 +37,8 @@
   <p class="muted">{{ order.name }} · {{ order.phone }}<br>{{ order.address }}</p>
   <div class="actions">
     {% if order.status == 'pending' %}<form method="post" action="{% url 'order_pay' order.pk %}">{% csrf_token %}<button class="btn">{% t 'Pay now' %}</button></form>{% endif %}
-    {% if order.status in 'paid in_transit ready delivered' %}<a class="btn btn-gray" href="{% url 'receipt' order.pk %}">{% t 'Receipt' %}</a>{% endif %}
+    {% if order.status in 'paid purchased china_warehouse in_transit local_warehouse ready delivered' %}<a class="btn btn-gray" href="{% url 'receipt' order.pk %}">{% t 'Receipt' %}</a>{% endif %}
   </div>
+  {% if support_url %}<a class="btn btn-wide support" href="{{ support_url }}" target="_blank" rel="noopener">{% include 'shop/_icon.html' with i='headset' size=22 %} {% t 'Support Service' %}</a>{% endif %}
 </section>
 {% endblock %}
