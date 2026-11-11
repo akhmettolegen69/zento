@@ -3,31 +3,48 @@
 {% block content %}
 <div class="home">
   <section class="feed">
-    {% if stories %}
-    <div class="stories" aria-label="Stories">
-      {% for s in stories %}
-      <button class="story" data-story="{{ s.pk }}">
-        <span class="story-ring"><img src="{% if s.store and s.store.logo %}{{ s.store.logo.url }}{% else %}{{ s.cover.url }}{% endif %}" alt=""></span>
-        <em>{% if s.store %}{{ s.store.slug }}{% else %}{{ s.title }}{% endif %}</em>
-      </button>
+    <nav class="tabs"><a class="{% if not is_following_tab %}on{% endif %}" href="{% url 'home' %}">{% t 'For You' %}</a><a class="{% if is_following_tab %}on{% endif %}" href="?tab=following">{% t 'Following' %}</a></nav>
+
+    {% if not is_following_tab %}
+    <div class="chips pills">
+      <a class="chip {% if not active_category %}on{% endif %}" href="{% url 'home' %}">{% t 'All' %}</a>
+      {% for c in categories %}<a class="chip {% if active_category == c.slug %}on{% endif %}" href="?category={{ c.slug }}">{{ c.name }}</a>{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if circles %}
+    <div class="stories" aria-label="Stores">
+      {% for store in circles %}
+      {% with sid=story_by_store|get:store.pk %}
+      {% if sid %}<button class="story" data-story="{{ sid }}">{% else %}<a class="story" href="{% url 'store' store.slug %}">{% endif %}
+        <span class="story-ring">{% if store.logo %}<img src="{{ store.logo.url }}" alt="">{% else %}<i>{{ store.initial }}</i>{% endif %}</span>
+        <em>{{ store.name }}</em>
+      {% if sid %}</button>{% else %}</a>{% endif %}
+      {% endwith %}
       {% endfor %}
     </div>
-    {% elif user.is_authenticated %}
-    <p class="muted stories-empty">{% t 'Follow stores to see their stories here.' %}</p>
     {% endif %}
 
     <div class="posts">
       {% include 'shop/_posts.html' %}
       {% if not page.object_list %}
-      <div class="empty">{% include 'shop/_icon.html' with i='store' size=48 stroke='1.2' %}<h2>{% t 'No products yet' %}</h2>
-        <p class="muted">{% t 'Stores will appear here once they pin products.' %}</p></div>
+      <div class="empty">{% include 'shop/_icon.html' with i='store' size=48 stroke='1.2' %}
+        {% if is_following_tab %}<h2>{% t 'Nothing here yet' %}</h2><p class="muted">{% t 'You are not following any stores yet.' %}</p>
+        {% else %}<h2>{% t 'No products yet' %}</h2><p class="muted">{% t 'Stores will appear here once they pin products.' %}</p>{% endif %}</div>
+      {% endif %}
+      {% if is_following_tab %}
+      <div class="find-stores">
+        {% include 'shop/_icon.html' with i='store' size=40 stroke='1.6' %}
+        <div><b>{% t 'Find New Stores' %}</b>
+          <a class="btn" href="{% url 'explore' %}?tab=stores">{% t 'View Stores' %} <span aria-hidden="true">→</span></a></div>
+      </div>
       {% endif %}
     </div>
   </section>
 
   <aside class="suggest">
-    <div class="suggest-head"><span class="muted">{% t 'Stores' %}</span><a href="{% url 'explore' %}">{% t 'See all' %}</a></div>
-    {% for store in suggested %}
+    <div class="suggest-head"><span class="muted">{% t 'Stores' %}</span><a href="{% url 'explore' %}?tab=stores">{% t 'See all' %}</a></div>
+    {% for store in circles|slice:":5" %}
     <div class="suggest-row">
       <a class="suggest-link" href="{% url 'store' store.slug %}">
         {% include 'shop/_avatar.html' with size='m' %}

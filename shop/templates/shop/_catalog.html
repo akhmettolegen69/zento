@@ -1,5 +1,5 @@
 {% load zento %}
-{% if stores %}
+{% if stores and tab == 'products' %}
 <div class="store-results">
   {% for store in stores %}
   <a class="suggest-row" href="{% url 'store' store.slug %}">
@@ -9,12 +9,25 @@
   {% endfor %}
 </div>
 {% endif %}
-<div class="chips">
+<div class="chips pills">
   <a class="chip {% if not active_category %}on{% endif %}" hx-get="?{% qs category='' page='' %}" hx-target="#catalog" href="?{% qs category='' page='' %}">{% t 'All' %}</a>
   {% for c in categories %}
   <a class="chip {% if active_category == c.slug %}on{% endif %}" hx-get="?{% qs category=c.slug page='' %}" hx-target="#catalog" href="?{% qs category=c.slug page='' %}">{{ c.name }}</a>
   {% endfor %}
 </div>
+{% if tab == 'stores' %}
+<div class="store-list">
+  {% for store in stores %}
+  <div class="suggest-row store-row">
+    <a class="suggest-link" href="{% url 'store' store.slug %}">
+      {% include 'shop/_avatar.html' with size='l' %}
+      <span class="grow"><b class="uname">{{ store.name }}</b>{% include 'shop/_verified.html' %}<br><span class="muted">{% if store.bio %}{{ store.bio|truncatechars:40 }}{% else %}{{ store.n }} {% plural store.n 'product' %}{% endif %}</span></span>
+    </a>
+    {% include 'shop/_follow.html' with cls='btn-follow' %}
+  </div>
+  {% empty %}<p class="muted empty-small">{% t 'Nothing found' %}</p>{% endfor %}
+</div>
+{% else %}
 <details class="filters-wrap"{% if filters.max_price or filters.delivery or not available_only %} open{% endif %}>
   <summary>{% t 'Filters' %}</summary>
   <form class="filters" hx-get="{% url 'explore' %}" hx-target="#catalog" hx-trigger="change, submit">
@@ -36,3 +49,5 @@
   {% include 'shop/_grid.html' %}
   {% if not page.object_list %}<p class="muted span-all empty-small">{% t 'Nothing found' %}</p>{% endif %}
 </div>
+
+{% endif %}

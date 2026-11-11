@@ -95,29 +95,54 @@ def _stories(request):
     return stories, data
 
 
+def _store_cards(**filters):
+    return Store.objects.filter(active=True, **filters).annotate(n=Count('products', distinct=True))
+
+
 def home(request):
-    page = _page(request, feed_products(), FEED_PAGE)
-    ctx = {'page': page}
+    tab = 'following' if request.GET.get('tab') == 'following' else 'for_you'
+    category = request.GET.get('category', '')
+    followed = (set(Follow.objects.filter(user=request.user).values_list('store_id', flat=True))
+                if request.user.is_authenticated else set())
+    posts = feed_products()
+    if tab == 'following':
+        posts = posts.filter(store_id__in=followed)
+    elif category:
+        posts = posts.filter(category__slug=category)
+    page = _page(request, posts, FEED_PAGE)
+    ctx = {'page': page, 'tab': tab, 'active_category': category}
     if _is_fragment(request, 'feed-more'):
         return render(request, 'shop/_posts.html', ctx)
     stories, story_data = _stories(request)
-    ctx.update(stories=stories, story_data=story_data,
-               suggested=Store.objects.filter(active=True).annotate(n=Count('products'))[:5])
+    circles = _store_cards(pk__in=followed) if tab == 'following' else _store_cards()
+    ctx.update(stories=stories, story_data=story_data, categories=Category.objects.all(),
+               story_by_store={s.store_id: s.pk for s in stories if s.store_id},
+               circles=circles[:12], is_following_tab=tab == 'following')
     return render(request, 'shop/home.html', ctx)
 
 
 def explore(request):
     q = request.GET.get('q', '').strip()
+    tab = 'stores' if request.GET.get('tab') == 'stores' else 'products'
+    category = request.GET.get('category', '')
     ctx = {
         'categories': Category.objects.all(),
-        'page': _page(request, _filtered_products(request), GRID_PAGE),
         'filters': request.GET,
         'q': q,
-        'active_category': request.GET.get('category', ''),
+        'tab': tab,
+        'active_category': category,
         'available_only': request.GET.get('available', '1') == '1',
-        'stores': (Store.objects.filter(active=True).filter(Q(name__icontains=q) | Q(slug__icontains=q))
-                   .annotate(n=Count('products'))[:8] if q else []),
     }
+    if tab == 'stores':
+        stores = _store_cards()
+        if q:
+            stores = stores.filter(Q(name__icontains=q) | Q(slug__icontains=q))
+        if category:
+            stores = stores.filter(products__category__slug=category)
+        ctx['stores'] = stores.distinct()
+    else:
+        ctx['page'] = _page(request, _filtered_products(request), GRID_PAGE)
+        ctx['stores'] = _store_cards().filter(Q(name__icontains=q) | Q(slug__icontains=q))[:8] if q else []
     if _is_fragment(request, 'grid-more'):
         return render(request, 'shop/_grid.html', ctx)
     if _is_fragment(request, 'catalog'):
