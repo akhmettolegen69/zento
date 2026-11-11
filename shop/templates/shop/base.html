@@ -35,6 +35,7 @@
     <details class="lang-mini"><summary>{{ lang|upper }}</summary><div class="menu">
       <a href="{% url 'set_language' 'ru' %}">Русский</a><a href="{% url 'set_language' 'kk' %}">Қазақша</a><a href="{% url 'set_language' 'en' %}">English</a>
     </div></details>
+    <a href="{% if user.is_authenticated %}{% url 'liked' %}{% else %}{% url 'login' %}{% endif %}" class="ic-wrap heart" aria-label="{% t 'Liked' %}">{% include 'shop/_icon.html' with i='heart' %}</a>
     <a href="{% if user.is_authenticated %}{% url 'account' %}{% else %}{% url 'login' %}{% endif %}" class="ic-wrap" aria-label="{% t 'Account' %}">{% include 'shop/_icon.html' with i='user' %}</a>
     <a href="{% url 'cart' %}" class="ic-wrap" aria-label="{% t 'Cart' %}">{% include 'shop/_icon.html' with i='bag' %}<span class="cart-badge" id="cart-badge-top">{% include 'shop/_cart_badge.html' %}</span></a>
   </div>

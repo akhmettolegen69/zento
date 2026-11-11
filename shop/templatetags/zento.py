@@ -13,6 +13,11 @@ def t(context, text):
 
 
 @register.filter
+def get(mapping, key):
+    return mapping.get(key)
+
+
+@register.filter
 def kzt(value):
     return f'{Decimal(value):,.0f}'.replace(',', ' ') + ' ₸'
 
