@@ -12,15 +12,13 @@
     </div>
     {% endif %}
 
-    {% if circles %}
-    <div class="stories" aria-label="Stores">
-      {% for store in circles %}
-      {% with sid=story_by_store|get:store.pk %}
-      {% if sid %}<button class="story" data-story="{{ sid }}">{% else %}<a class="story" href="{% url 'store' store.slug %}">{% endif %}
-        <span class="story-ring">{% if store.logo %}<img src="{{ store.logo.url }}" alt="">{% else %}<i>{{ store.initial }}</i>{% endif %}</span>
-        <em>{{ store.name }}</em>
-      {% if sid %}</button>{% else %}</a>{% endif %}
-      {% endwith %}
+    {% if stories %}
+    <div class="stories" aria-label="Stories">
+      {% for s in stories %}
+      <button class="story" data-story="{{ s.pk }}">
+        <span class="story-ring">{% if s.store and s.store.logo %}<img src="{{ s.store.logo.url }}" alt="">{% elif s.store %}<i>{{ s.store.initial }}</i>{% else %}<img src="{{ s.cover.url }}" alt="">{% endif %}</span>
+        <em>{% if s.store %}{{ s.store.name }}{% else %}{{ s.title }}{% endif %}</em>
+      </button>
       {% endfor %}
     </div>
     {% endif %}
