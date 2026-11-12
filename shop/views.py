@@ -70,11 +70,11 @@ def feed_products():
             .annotate(store_total=Subquery(store_total)))
 
 
-def _stories(request):
+def _stories(request, followed_only=False, followed=()):
     qs = Story.visible()
-    if request.user.is_authenticated:  # personalized: only stores the user follows
-        qs = qs.filter(store__active=True, store__follows__user=request.user)
-    else:
+    if followed_only:  # Following tab: only stores the user follows
+        qs = qs.filter(store__active=True, store_id__in=followed)
+    else:  # For You tab: everything, for everyone
         qs = qs.filter(Q(store__isnull=True) | Q(store__active=True))
     stories = list(qs.select_related('product', 'store').prefetch_related('slides'))
     data = {}
@@ -113,7 +113,7 @@ def home(request):
     ctx = {'page': page, 'tab': tab, 'active_category': category}
     if _is_fragment(request, 'feed-more'):
         return render(request, 'shop/_posts.html', ctx)
-    stories, story_data = _stories(request)
+    stories, story_data = _stories(request, tab == 'following', followed)
     circles = _store_cards(pk__in=followed) if tab == 'following' else _store_cards()
     ctx.update(stories=stories, story_data=story_data, categories=Category.objects.all(),
                story_by_store={s.store_id: s.pk for s in stories if s.store_id},

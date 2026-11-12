@@ -199,17 +199,20 @@ class FollowTests(TestCase):
         Story.objects.create(title='sitewide', cover=img())
         self.u = User.objects.create_user('bob', password='pw12345678')
 
-    def titles(self):
-        return {s.title for s in self.client.get(reverse('home')).context['stories']}
+    def titles(self, tab=''):
+        url = reverse('home') + (f'?tab={tab}' if tab else '')
+        return {s.title for s in self.client.get(url).context['stories']}
 
     def test_anonymous_sees_all_stories(self):
         self.assertEqual(self.titles(), {'story-a', 'story-b', 'sitewide'})
 
-    def test_logged_in_sees_only_followed(self):
+    def test_logged_in_for_you_all_following_only_followed(self):
         self.client.force_login(self.u)
-        self.assertEqual(self.titles(), set())
+        self.assertEqual(self.titles(), {'story-a', 'story-b', 'sitewide'})
+        self.assertEqual(self.titles('following'), set())
         self.client.post(reverse('follow', args=['a']), HTTP_HX_REQUEST='true')
-        self.assertEqual(self.titles(), {'story-a'})
+        self.assertEqual(self.titles('following'), {'story-a'})
+        self.assertEqual(self.titles(), {'story-a', 'story-b', 'sitewide'})
 
     def test_toggle_follow_unfollow(self):
         self.client.force_login(self.u)
